@@ -1,3 +1,34 @@
+"""
+# Synopsis
+
+>`render.py [<options>] <model-file>`
+
+>**Chrystal Chern**, and **Claudio Perez**
+
+
+This script plots the geometry of a structural
+model given a SAM JSON file.
+
+
+## Matlab
+In order to install the Matlab bindings, open Matlab in a
+directory containing the files `render.py` and `render.m`,
+and run the following command in the Matlab interpreter:
+
+    render --install
+
+Once this process is complete, the command `render` can be
+called from Matlab, just as described below for the command
+line.
+
+# Usage
+This script can be used either as a module, or as a command
+line utility. When invoked from the command line on
+**Windows**, {NAME} should be `python -m render`. For example:
+
+    python -m render model.json --axes 2 --view elev
+
+"""
 import os
 import sys
 
@@ -5,6 +36,7 @@ import yaml
 import numpy as np
 import sees
 from sees import config, RenderError
+from sees.views import VIEWS
 
 __version__ = "0.0.4"
 
@@ -183,7 +215,6 @@ def parse_args(argv)->dict:
                 if "html" in filename or "json" in filename:
                     opts["plotter"] = "plotly"
 
-
             # Final check on options
             elif arg[0] == "-" and len(arg) > 1:
                 raise RenderError(f"ERROR - unknown option '{arg}'")
@@ -237,13 +268,6 @@ def install_me(install_opt=None):
           license="",
           install_requires=[*REQUIREMENTS.strip().split("\n")],
     )
-
-VIEWS = { # pre-defined plot views
-    "plan":    dict(azim=  0, elev= 90),
-    "sect":    dict(azim=  0, elev=  0),
-    "elev":    dict(azim=-90, elev=  0),
-    "iso":     dict(azim= 45, elev= 35)
-}
 
 TESTS = [
     (False,"{NAME} sam.json -d 2:plan -s"),

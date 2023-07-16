@@ -1,9 +1,7 @@
 #!/bin/env python
-import sys, math, logging
-# FORMAT = '%(asctime)s %(clientip)-15s %(user)-8s %(message)s'
-# logging.basicConfig(format=FORMAT)
-# d = {'clientip': '192.168.0.1', 'user': 'fbloggs'}
-# logger = logging.getLogger('consolidate')
+import sys
+import math
+
 
 def _list_equal(l1:list, l2:list, verbose=False)->bool:
     match = True
@@ -180,6 +178,7 @@ def consolidate(model, modify = False):
     print(f"elements:\t{len(elems)}\t{len(elem_types)}",file=sys.stderr)
 
     return model
+
 
 if __name__=="__main__":
     import json,sys
