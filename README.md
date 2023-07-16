@@ -55,7 +55,7 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 
 ## Features
 
-- Extrudeded deformed shape
+- Extruded deformed shape
 
 - Detailed section rendering
 
