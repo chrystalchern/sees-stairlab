@@ -20,8 +20,6 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 -------------------------------------------------------------------- 
 -->
 
-<br>
-
 <div style="align:center">
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sees?logo=pypi&style=for-the-badge)](https://pypi.python.org/pypi/sees)
