@@ -11,7 +11,7 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 -->
 
 
-**The friendly OpenSees renderer**
+**A sensible OpenSees renderer**
 
 
 <br>
@@ -65,4 +65,12 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 - Correctly render models that treat both `y` or `z` as the
   vertical coordinate. Just pass the  option `vert=3` to render
   model `z` vertically, or `vert=2` to render model `y` vertically.
+
+-------------------------------------------------------------------- 
+
+<br>
+
+See also
+
+- [`opensees`](pypi.org/project/opensees)
 
