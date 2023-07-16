@@ -11,7 +11,7 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 -->
 
 
-**A sensible OpenSees renderer**
+**A modern OpenSees renderer**
 
 
 <br>
@@ -38,6 +38,8 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 -------------------------------------------------------------------- 
 -->
 
+`sees` is a finite element rendering library that leverages modern 
+web technologies to produce sharable, efficient, and beautiful renderings.
 
 
 <!-- Badge links -->

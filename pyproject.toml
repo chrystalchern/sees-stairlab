@@ -1,11 +1,11 @@
 [project]
 name = "sees"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   {name="Claudio M. Perez", email="50180406+claudioperez@users.noreply.github.com"},
   {name="Chrystal Chern",   email="52893467+chrystalchern@users.noreply.github.com"}
 ]
-description="A sensible OpenSees renderer"
+description="A modern OpenSees renderer"
 
 readme = "README.md"
 
