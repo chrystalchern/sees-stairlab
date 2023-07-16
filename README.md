@@ -4,7 +4,7 @@
 <img align="left" src="https://raw.githubusercontent.com/BRACE2/OpenSeesRT/master/docs/figures/banner.png" width="150px" alt="OpenSees">
 -->
 
-<img align="left" src="https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true" width="250px" alt="SEES Logo">
+<img align="left" src="https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true" width="350px" alt="SEES Logo">
 
 <!--
 https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true
@@ -24,15 +24,13 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 
 <div style="align:center">
 
-<!--
-[![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/sees?logo=conda-forge&style=for-the-badge)](https://anaconda.org/conda-forge/sees)
--->
-
-<!-- [![PyPI Downloads][pypi-v-image]][pypi-v-link] -->
-
 [![Latest PyPI version](https://img.shields.io/pypi/v/sees?logo=pypi&style=for-the-badge)](https://pypi.python.org/pypi/sees)
 [![](https://img.shields.io/conda/v/sees/sees?color=%23660505&style=for-the-badge)](https://anaconda.org/sees/sees)
+
+<!--
+[![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/sees?logo=conda-forge&style=for-the-badge)](https://anaconda.org/conda-forge/sees)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/sees?style=for-the-badge)](https://pypi.org/project/sees)
+-->
 
 </div>
 
