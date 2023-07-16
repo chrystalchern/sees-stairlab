@@ -25,11 +25,11 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 <div style="align:center">
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sees?logo=pypi&style=for-the-badge)](https://pypi.python.org/pypi/sees)
-[![](https://img.shields.io/conda/v/sees/sees?color=%23660505&style=for-the-badge)](https://anaconda.org/sees/sees)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/sees?style=for-the-badge)](https://pypi.org/project/sees)
 
 <!--
 [![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/sees?logo=conda-forge&style=for-the-badge)](https://anaconda.org/conda-forge/sees)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/sees?style=for-the-badge)](https://pypi.org/project/sees)
+[![](https://img.shields.io/conda/v/sees/sees?color=%23660505&style=for-the-badge)](https://anaconda.org/sees/sees)
 -->
 
 </div>
