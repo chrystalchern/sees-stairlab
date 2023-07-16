@@ -72,5 +72,5 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 
 See also
 
-- [`opensees`](pypi.org/project/opensees)
+- [`opensees`](https://pypi.org/project/opensees)
 
