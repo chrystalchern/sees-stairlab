@@ -48,3 +48,19 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 [pypi-v-image]: https://img.shields.io/pypi/v/sees.svg
 [pypi-v-link]: https://pypi.org/project/sees
 
+
+-------------------------------------------------------------------- 
+
+## Features
+
+- Extrudeded deformed shape
+
+- Detailed section rendering
+
+- A wide selection of rendering backends and output file types, including 
+  optimized 3D web formats like `.glb`.
+
+- Correctly render models that treat both `y` or `z` as the
+  vertical coordinate. Just pass the  option `vert=3` to render
+  model `z` vertically, or `vert=2` to render model `y` vertically.
+
