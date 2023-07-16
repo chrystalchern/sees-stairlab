@@ -4,7 +4,7 @@
 <img align="left" src="https://raw.githubusercontent.com/BRACE2/OpenSeesRT/master/docs/figures/banner.png" width="150px" alt="OpenSees">
 -->
 
-<img align="left" src="https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true" width="150px" alt="SEES Logo">
+<img align="left" src="https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true" width="250px" alt="SEES Logo">
 
 <!--
 https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true
