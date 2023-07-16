@@ -1,5 +1,6 @@
-from .canvas import Canvas
 import numpy as np
+from .canvas import Canvas
+from ..views import VIEWS
 
 class MatplotlibCanvas(Canvas):
     def __init__(self, ax=None):

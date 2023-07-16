@@ -2,6 +2,7 @@ import os
 import sys
 
 import yaml
+import numpy as np
 import sees
 from sees import config, RenderError
 

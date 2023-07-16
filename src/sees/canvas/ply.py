@@ -66,7 +66,7 @@ class PlotlyCanvas(Canvas):
     def plot_nodes(self, coords, label = None, props=None, data=None):
         name = label or "nodes"
         x,y,z = coords.T
-        keys  = ["tag",]
+        keys  = ["tag","crd"]
 
         data = {
                 "name": name,
