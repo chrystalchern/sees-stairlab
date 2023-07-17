@@ -1,3 +1,4 @@
+# Claudio Perez
 import numpy as np
 import pygltflib
 from .canvas import Canvas
