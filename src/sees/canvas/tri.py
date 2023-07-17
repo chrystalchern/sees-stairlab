@@ -1,3 +1,4 @@
+# Claudio Perez
 from .canvas import Canvas
 import trimesh
 import numpy as np

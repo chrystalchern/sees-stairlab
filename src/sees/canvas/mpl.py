@@ -1,3 +1,4 @@
+# Claudio Perez
 import numpy as np
 from .canvas import Canvas
 from ..views import VIEWS
