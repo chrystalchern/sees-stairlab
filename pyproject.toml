@@ -33,7 +33,7 @@ install_requires = [
 
 [project.urls]
 repository = "http://github.com/BRACE2/sees"
-documentation = "https://brace2.github.io/sees"
+# documentation = "https://brace2.github.io/sees"
 
 [project.scripts]
 sees = "sees.__main__:main"

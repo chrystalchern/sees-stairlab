@@ -53,6 +53,8 @@ web technologies to produce sharable, efficient, and beautiful renderings.
 
 <br>
 
+Documentation is currently under development.
+
 ## Features
 
 - Extruded deformed shape
