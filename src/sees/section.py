@@ -6,7 +6,7 @@ from math import sqrt
 
 def show(): plt.show()
 
-def section(s, ax=None, show=None, **kwds):
+def render(s, ax=None, show=None, **kwds):
     if isinstance(show, str):
         show = [show]
     elif show is None:
@@ -150,14 +150,16 @@ class MatplotlibSectionCanvas:
                 try:
                     ax.scatter(*zip(*(f.coord for patch in section.patches for f in patch.fibers)), s=0.1)
                 except Exception as e:
-                    print(e)
+                    # print(e)
+                    pass
 
 
                 try:
                     coords, areas = zip(*((f.coord, 20*f.area) for layer in section.layers for f in layer.fibers))
                     ax.scatter(*zip(*coords), s=areas, color="k")
                 except Exception as e:
-                    print(e)
+                    # print(e)
+                    pass
 
         # show centroid
         #ax.scatter(*section.centroid)
