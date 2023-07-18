@@ -38,7 +38,7 @@ from sees import RenderError
 from sees.cli import parse_args
 from sees.views import VIEWS
 
-
+NAME="sees"
 EXAMPLES="""
 Examples:
     Plot the structural model defined in the file `sam.json`:

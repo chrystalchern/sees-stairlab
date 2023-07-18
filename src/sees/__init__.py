@@ -109,6 +109,8 @@ def get_section_shape(section, sections=None, outlines=None):
     if "section" in section:
         if section["section"] not in outlines:
             outlines[section["name"]] = get_section_shape(sections[section["section"]], sections, outlines)
+        else:
+            outlines[section["name"]] = outlines[section["section"]]
 
     elif "bounding_polygon" in section:
         outlines[section["name"]] = [R@s for s in section["bounding_polygon"]]
@@ -117,6 +119,7 @@ def get_section_shape(section, sections=None, outlines=None):
         #outlines[section["name"]] = _alpha_shape(np.array([f["coord"] for f in section["fibers"]]))
         points = np.array([f["coord"] for f in section["fibers"]])
         outlines[section["name"]] = points[ConvexHull(points).vertices]
+
     return outlines[section["name"]]
 
 def get_section_geometries(model, renderer=None):
@@ -664,6 +667,7 @@ class SkeletalRenderer:
             try:
                 self.plot_extruded_frames(displ)
             except Exception as e:
+                raise e
                 print("Warning -- ", e, file=sys.stderr)
 
         self.canvas.build()
