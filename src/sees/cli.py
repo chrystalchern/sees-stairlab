@@ -34,8 +34,8 @@ Options:
 
   MISC.
   -o, --save   <out-file>        Save plot to <out-file>.
-  -C, --conf   <conf-file>
-  -c
+      --conf   <conf-file>
+  -c           <canvas>
 
   BACKEND
   --canvas <canvas>              trimesh, gnu, plotly, matplotlib
@@ -114,6 +114,16 @@ def parse_args(argv)->dict:
                     presets = yaml.load(f, Loader=yaml.Loader)
                 config.apply_config(presets,opts)
 
+            elif arg == "--set":
+                import ast
+                k,v = next(args).split("=")
+                val = ast.literal_eval(v)
+                d = opts
+                keys = k.split(".")
+                for key in keys[:-1]:
+                    d = d[key]
+                import sys
+                d[keys[-1]] = val
 
             elif arg[:2] == "-s":
                 opts["scale"] = float(arg[2:]) if len(arg) > 2 else float(next(args))

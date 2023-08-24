@@ -25,7 +25,7 @@ Config = lambda : {
   "displacements": {"scale": 100, "color": "#660505"},
 
   "objects": {
-      "origin": {"color": "black"},
+      "origin": {"color": "black", "scale": 1.0},
       "frames" : {
           "displaced": {"color": "red", "npoints": 20}
       },

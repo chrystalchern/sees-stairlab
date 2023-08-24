@@ -385,10 +385,13 @@ class SkeletalRenderer:
     def label_nodes(self): ...
 
 
-    def plot_origin(self, scale):
+    def plot_origin(self, **kwds):
         xyz = np.zeros((3,3))
-        uvw = np.eye(3)*scale
-        self.canvas.plot_vectors(xyz, uvw)
+        uvw = np.eye(3)*kwds.get("scale", 1.0)
+        self.canvas.plot_vectors(xyz, uvw, **kwds)
+        if hasattr(self.canvas, "annotate"):
+            for i,label in enumerate(kwds.get("label", [])):
+                self.canvas.annotate(label, (xyz+uvw)[i])
 
 #   def plot_frame_axes(self):
 #       for elem in self.model["assembly"].values():
@@ -650,7 +653,7 @@ class SkeletalRenderer:
             self.plot_nodes(data=list(np.array(list(self.model["nodes"].keys()),dtype=FLOAT)[:,None]))
 
         if "origin" in self.config["show_objects"]:
-            self.plot_origin(self.config["scale"])
+            self.plot_origin(**self.config["objects"]["origin"])
 
         if "triads" in self.config["show_objects"]:
             self.add_triads()

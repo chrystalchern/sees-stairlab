@@ -6,6 +6,7 @@ class PlotlyCanvas(Canvas):
     def __init__(self, config=None):
         self.data = []
         self.config = config
+        self.annotations = []
 
     def show(self):
         self.fig.show(renderer="browser")
@@ -18,19 +19,21 @@ class PlotlyCanvas(Canvas):
         fig = go.Figure(dict(
                 data=self.data,
                 layout=go.Layout(
-                  scene=dict(aspectmode='data',
+                  scene=dict(aspectmode="data",
                      xaxis = {"showspikes": "tick" in opts["show_objects"],
                               "showbackground": show_grid, "gridcolor": "gray" if show_grid else None},
                      yaxis = {"showspikes": "tick" in opts["show_objects"],
                               "showbackground": show_grid, "gridcolor": "gray" if show_grid else None},
                      zaxis = {"showspikes": "tick" in opts["show_objects"],
                               "showbackground": show_grid, "gridcolor": "gray" if show_grid else None},
+                     xaxis_title = r"$\mathbf{E}_1$",
                      xaxis_visible = "x" in opts["show_objects"],#show_axis,
                      yaxis_visible = "y" in opts["show_objects"],#show_axis,
                      zaxis_visible = "z" in opts["show_objects"],#show_axis,
                      camera=dict(
                          projection={"type": opts["camera"]["projection"]}
-                     )
+                     ),
+                     annotations=self.annotations
                   ),
 #                 showlegend=("legend" in opts["show_objects"])
                 )
@@ -96,7 +99,19 @@ class PlotlyCanvas(Canvas):
         }
         self.data.append(data)
 
-    def plot_vectors(self, locs, vecs, label=None, **kwds):
+    def annotate(self, text, coords, **kwds):
+        self.annotations.append({
+            "text": text,
+            "showarrow": False,
+            "xanchor": "left",
+            "yshift": -10,
+            "xshift":   5,
+            "font": {"color": "black", "size": 15},
+            "x": coords[0], "y": coords[1], "z": coords[2],
+            **kwds
+        })
+
+    def plot_vectors(self, locs, vecs, **kwds):
 
         ne = vecs.shape[0]
         for j in range(3):
@@ -104,13 +119,21 @@ class PlotlyCanvas(Canvas):
             for i in range(j,ne,3):
                 X[i*3,:] = locs[i]
                 X[i*3+1,:] = locs[i] + vecs[i]
+
+            color = kwds.get("color", ("red", "blue", "green")[j])
+
+            # _label = label if label is not None else ""
+            label = kwds.get("label", "")
+            if isinstance(label, list):
+                label = label[j]
             self.data.append({
-                "name": label if label is not None else "",
+                "name": label,
                 "type": "scatter3d",
                 "mode": "lines",
                 "x": X.T[0], "y": X.T[1], "z": X.T[2],
-                "line": {"color": ("red", "blue", "green")[j], "width": 4},
-                "hoverinfo":"skip"
+                "line": {"color": color, "width": 4},
+                "hoverinfo":"skip",
+                "showlegend": False
             })
 
     def plot_mesh(self, vertices, triangles):

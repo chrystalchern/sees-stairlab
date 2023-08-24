@@ -1,6 +1,6 @@
 [project]
 name = "sees"
-version = "0.0.5"
+version = "0.0.6"
 authors = [
   {name="Claudio M. Perez", email="50180406+claudioperez@users.noreply.github.com"},
   {name="Chrystal Chern",   email="52893467+chrystalchern@users.noreply.github.com"}
@@ -16,10 +16,9 @@ keywords = [
   "earthquake-engineering",
 ] 
 
-[options]
-#packages = find
-install_requires = [
+dependencies = [
   "sdof",
+  "ssid",
   "opensees",
   "quakeio",
 
@@ -27,9 +26,35 @@ install_requires = [
   "scipy",
   "numpy",
   "plotly",
-  "trimesh",
+# "trimesh",
+  "pygltflib",
   "matplotlib"
 ]
+
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: C',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Topic :: Software Development',
+    'Topic :: Scientific/Engineering',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+]
+
 
 [project.urls]
 repository = "http://github.com/BRACE2/sees"
