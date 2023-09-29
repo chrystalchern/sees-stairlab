@@ -70,6 +70,31 @@ Documentation is currently under development.
 
 -------------------------------------------------------------------- 
 
+## Command Line Interface
+
+To create a rendering, execute the following command from the anaconda prompt (after activating the appropriate environment):
+
+```shell
+python -m sees model.json -o model.html
+```
+
+If you omit the `-o <file.html>` portion, it will plot immediately in a new window. You can also use a `.png` extension to save a static image file, as opposed to the interactive html.
+
+
+To plot an elevation (`elev`) plan (`plan`) or section (`sect`) view, run:
+
+```shell
+python -m sees model.json --view elev
+```
+
+and add `-o <file.extension>` as appropriate.
+
+To see the help page run
+
+```shell
+python -m sees --help
+```
+
 <br>
 
 See also
