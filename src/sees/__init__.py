@@ -1,33 +1,18 @@
-#!/bin/env python
-#
-# The remainder of this script is broken into the following sections:
-#
-# - Data shaping / Misc.
-# - Kinematics
-# - Plotting
-# - Command line processing
-#
 import os
 import sys
+from collections import defaultdict
 try:
     import orjson as json
 except ImportError:
     import json
-from collections import defaultdict
+
+import yaml
+import numpy as np
+Array = np.ndarray
+FLOAT = np.float32
+from scipy.linalg import block_diag
+
 from .config import Config, apply_config
-
-try:
-    import yaml
-    import numpy as np
-    Array = np.ndarray
-    FLOAT = np.float32
-    from scipy.linalg import block_diag
-
-except:
-    # prevent undefined variables when run in install mode
-    yaml = None
-    Array = list
-    FLOAT =  float
 
 
 # Data shaping / Misc.
@@ -154,14 +139,23 @@ def read_displacements(res_file):
 
     return res
 
+
+
+
 def read_model(filename:str, shift=None)->dict:
+
+    if isinstance(filename, str) and filename.endswith(".tcl"):
+        import opensees.tcl
+        with open(filename, "r") as f:
+            interp = opensees.tcl.eval(f.read(), silent=True, analysis=False)
+        return interp.serialize()
+
     try:
         with open(filename,"r") as f:
             sam = json.loads(f.read())
     except TypeError:
         sam = json.loads(filename.read())
     return sam
-
 
 
 # Kinematics
@@ -714,9 +708,8 @@ def render(sam_file, res_file=None, noshow=False, **opts):
 
     config = Config()
 
-
     if sam_file is None:
-        raise RenderError("ERROR -- expected positional argument <sam-file>")
+        raise RenderError("ERROR -- expected required argument <sam-file>")
 
     # Read and clean model
     if not isinstance(sam_file, dict):
