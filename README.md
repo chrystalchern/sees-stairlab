@@ -88,7 +88,7 @@ If you omit the `-o <file.html>` portion, it will plot immediately in a new
 window. You can also use a `.png` extension to save a static image file, as
 opposed to the interactive html.
 
-> Note: Printing depends on the JSON output of a model. Several materials and
+> **Note** Printing depends on the JSON output of a model. Several materials and
 > elements in the OpenSeesPy and upstream OpenSees implementations do not
 > correctly print to JSON. For the most reliable results, use the
 > [`opensees`](https://pypi.org/project/opensees) package.
