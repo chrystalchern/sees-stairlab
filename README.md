@@ -10,9 +10,7 @@
 https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true
 -->
 
-
 **A modern OpenSees renderer**
-
 
 <br>
 
@@ -65,8 +63,7 @@ Documentation is currently under development.
   optimized 3D web formats like `.glb`.
 
 - Correctly render models that treat both `y` or `z` as the
-  vertical coordinate. Just pass the  option `vert=3` to render
-  model `z` vertically, or `vert=2` to render model `y` vertically.
+  vertical coordinate.
 
 -------------------------------------------------------------------- 
 
@@ -93,6 +90,9 @@ opposed to the interactive html.
 > correctly print to JSON. For the most reliable results, use the
 > [`opensees`](https://pypi.org/project/opensees) package.
 
+By default, the rendering treats the $y$ coordinate as vertical.
+In order to manually control this behavior, just pass the  option 
+`--vert 3` to render model $z$ vertically, or `--vert 2` to render model $y$ vertically.
 
 If the [`opensees`](https://pypi.org/project/opensees) package is installed,
 you can directly render a Tcl script without first printing to JSON, 
@@ -116,11 +116,12 @@ To see the help page run
 python -m sees --help
 ```
 
+
+
 <br>
 
 See also
 
 - [`opensees`](https://pypi.org/project/opensees)
 - [`osmg`](https://pypi.org/project/osmg)
-
 
