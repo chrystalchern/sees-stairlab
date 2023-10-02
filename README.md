@@ -78,8 +78,29 @@ To create a rendering, execute the following command from the anaconda prompt (a
 python -m sees model.json -o model.html
 ```
 
-If you omit the `-o <file.html>` portion, it will plot immediately in a new window. You can also use a `.png` extension to save a static image file, as opposed to the interactive html.
+where `model.json` is a JSON file generate from executing the following OpenSees command:
 
+```tcl
+print -JSON model.json
+```
+
+If you omit the `-o <file.html>` portion, it will plot immediately in a new
+window. You can also use a `.png` extension to save a static image file, as
+opposed to the interactive html.
+
+> Note: Printing depends on the JSON output of a model. Several materials and
+> elements in the OpenSeesPy and upstream OpenSees implementations do not
+> correctly print to JSON. For the most reliable results, use the
+> [`opensees`](https://pypi.org/project/opensees) package.
+
+
+If the [`opensees`](https://pypi.org/project/opensees) package is installed,
+you can directly render a Tcl script without first printing to JSON, 
+by just passing a Tcl script instead of the JSON file:
+
+```shell
+python -m sees model.tcl -o model.html
+```
 
 To plot an elevation (`elev`) plan (`plan`) or section (`sect`) view, run:
 
@@ -100,4 +121,6 @@ python -m sees --help
 See also
 
 - [`opensees`](https://pypi.org/project/opensees)
+- [`osmg`](https://pypi.org/project/osmg)
+
 
