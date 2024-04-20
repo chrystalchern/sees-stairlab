@@ -122,8 +122,8 @@ def parse_args(argv)->dict:
                 keys = k.split(".")
                 for key in keys[:-1]:
                     d = d[key]
-                import sys
                 d[keys[-1]] = val
+
 
             elif arg[:2] == "-s":
                 opts["scale"] = float(arg[2:]) if len(arg) > 2 else float(next(args))
@@ -143,7 +143,9 @@ def parse_args(argv)->dict:
                 opts["show_objects"].extend(next(args).split(","))
 
             elif arg == "--hide":
-                opts["show_objects"].pop(opts["show_objects"].index(next(args)))
+                obj = next(args)
+                if obj in opts["show_objects"]:
+                    opts["show_objects"].pop(opts["show_objects"].index(obj))
 
             elif arg[:2] == "-V":
                 opts["view"] = arg[2:] if len(arg) > 2 else next(args)
@@ -152,6 +154,10 @@ def parse_args(argv)->dict:
 
             elif arg == "--default-section":
                 opts["default_section"] = np.loadtxt(next(args))
+
+            elif arg == "--standard-section":
+                opts["standard_section"] = next(args)
+
 
             elif arg[:2] == "-m":
                 opts["mode_num"] = int(arg[2]) if len(arg) > 2 else int(next(args))

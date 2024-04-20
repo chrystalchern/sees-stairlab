@@ -107,7 +107,7 @@ TESTS = [
     (True, "{NAME} sam.json -d 5:2,3:2,2:2 -s100 --vert 2 sam.json")
 ]
 
-if __name__ == "__main__":
+def main():
     config = parse_args(sys.argv)
 
     if config is None:
@@ -121,4 +121,7 @@ if __name__ == "__main__":
         print(e, file=sys.stderr)
         print("         Run '{NAME} --help' for more information".format(NAME=NAME), file=sys.stderr)
         sys.exit()
+
+if __name__ == "__main__":
+    main()
 
