@@ -35,7 +35,7 @@ class PlotlyCanvas(Canvas):
                      ),
                      annotations=self.annotations,
                   ),
-                  margin=dict(l=0,r=0,b=0,t=0),
+                  margin=dict(l=0,r=0,b=0,t=25),
 #                 showlegend=("legend" in opts["show_objects"])
                 )
             ))
