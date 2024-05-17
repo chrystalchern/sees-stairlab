@@ -33,8 +33,9 @@ class PlotlyCanvas(Canvas):
                      camera=dict(
                          projection={"type": opts["camera"]["projection"]}
                      ),
-                     annotations=self.annotations
+                     annotations=self.annotations,
                   ),
+                  margin=dict(l=0,r=0,b=0,t=0),
 #                 showlegend=("legend" in opts["show_objects"])
                 )
             ))
