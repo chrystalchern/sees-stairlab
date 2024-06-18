@@ -4,7 +4,7 @@
 <img align="left" src="https://raw.githubusercontent.com/BRACE2/OpenSeesRT/master/docs/figures/banner.png" width="150px" alt="OpenSees">
 -->
 
-<img align="left" src="https://github.com/BRACE2/OpenSeesRT/blob/master/docs/figures/hockling.png?raw=true" width="350px" alt="SEES Logo">
+<img align="left" src="https://github.com/claudioperez/opensees/blob/master/docs/figures/hockling.png?raw=true" width="350px" alt="SEES Logo">
 
 <!--
 https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true
@@ -124,4 +124,44 @@ See also
 
 - [`opensees`](https://pypi.org/project/opensees)
 - [`osmg`](https://pypi.org/project/osmg)
+- [`mdof`](https://pypi.org/project/mdof)
+- [`sdof`](https://pypi.org/project/sdof)
+
+For OpenSees rendering
+
+- [`vfo`](https://vfo.readthedocs.io/en/latest/)
+- [`opsvis`](https://opsvis.readthedocs.io/en/latest/index.html)
+
+Other
+
+- [`fapp`](https://github.com/wcfrobert/fapp)
+
+## Support
+
+<table align="center">
+<tr>
+
+  <td>
+    <a href="https://peer.berkeley.edu">
+    <img src="https://raw.githubusercontent.com/claudioperez/sdof/master/docs/assets/peer-black-300.png"
+         alt="PEER Logo" width="200"/>
+    </a>
+  </td>
+
+  <td>
+    <a href="https://dot.ca.gov/">
+    <img src="https://raw.githubusercontent.com/claudioperez/sdof/master/docs/assets/Caltrans.svg.png"
+         alt="Caltrans Logo" width="200"/>
+    </a>
+  </td>
+
+  <td>
+    <a href="https://peer.berkeley.edu">
+    <img src="https://raw.githubusercontent.com/claudioperez/sdof/master/docs/assets/brace2_logo-new3_ungrouped.svg"
+         alt="BRACE2 Logo" width="200"/>
+    </a>
+  </td>
+ 
+ </tr>
+</table>
 
