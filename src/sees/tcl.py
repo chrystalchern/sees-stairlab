@@ -22,6 +22,9 @@ def _render(*args, rt=None):
     return ""
 
 def add_commands(rt):
-    rt._tcl.createcommand("sees::render", partial(_render, rt=rt))
-    return
+    try:
+        rt._tcl.createcommand("sees::render", partial(_render, rt=rt))
+    except:
+        pass
+
 
