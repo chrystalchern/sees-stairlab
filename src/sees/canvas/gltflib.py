@@ -159,19 +159,35 @@ class GltfLibCanvas(Canvas):
 
     def show(self):
         import bottle
+        page = self._form_html("./model.glb")
+
+        glb = b"".join(self.gltf.save_to_bytes())
+        app = bottle.Bottle()
+        app.route("/")(lambda : page )
+        app.route("/model.glb")(lambda : glb)
+        bottle.run(app, host="localhost", port=8080)
+
+
+    def _form_html(self, src):
+#       with open(Path(__file__).parents[0]/"three"/"webgl_instancing_scatter.html", "r") as f:
+        with open(Path(__file__).parents[0]/"three"/"index.html", "r") as f:
+            return f.read()
+
+    def _form_html_(self, src):
         import textwrap
 
-        page = textwrap.dedent("""
+        return textwrap.dedent(f"""
           <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
             "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
           <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
           <head>
-          <meta charset="utf-8">
-          <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+            <meta charset="utf-8">
+            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js">
+            </script>
           </head>
           <body>
             <model-viewer alt="rendering"
-                          src="./mesh.glb"
+                          src="{src}"
                           ar
                           style="width: 100%; height: 1000px;"
                           shadow-intensity="1" camera-controls touch-action="pan-y">
@@ -179,13 +195,6 @@ class GltfLibCanvas(Canvas):
           </body>
           </html>
         """)
-
-
-        glb = b"".join(self.gltf.save_to_bytes())
-        app = bottle.Bottle()
-        app.route("/")(lambda : page )
-        app.route("/mesh.glb")(lambda : glb)
-        bottle.run(app, host="localhost", port=8080)
 
     def write(self, filename=None):
         opts = self.config

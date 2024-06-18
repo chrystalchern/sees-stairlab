@@ -49,8 +49,6 @@ def _quads_to_tris(quads):
 
 # plot edges from a finite element mesh
 def _draw_plane_mesh(nodes, elements, ax):
-    print(nodes)
-    print(elements)
     for element in elements:
         x = [nodes[element[i]][0] for i in range(len(element))]
         y = [nodes[element[i]][1] for i in range(len(element))]
