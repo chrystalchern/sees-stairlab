@@ -5,6 +5,7 @@
 from collections import defaultdict
 
 Config = lambda : {
+  "model_config": {},
   "show_objects": ["frames", "frames.displ", "nodes", "legend", "elastica"],
   "mode_num"    : None,
   "hide_objects": ["origin"],
@@ -16,6 +17,7 @@ Config = lambda : {
   "vert":         2,
   "view":         "iso",
   "plotter":      "matplotlib",
+  "canvas":       {}, # kwds for canvas
 
   "camera": {
       "view": "iso",               # iso | plan| elev[ation] | sect[ion]
