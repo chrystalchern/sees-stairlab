@@ -1,4 +1,5 @@
 # Claudio Perez
+from pathlib import Path
 import numpy as np
 import pygltflib
 from .canvas import Canvas
@@ -39,7 +40,7 @@ class GltfLibCanvas(Canvas):
                 pygltflib.Material(
                     name="gray",
                     pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
-                        baseColorFactor=[0, 0, 0, 1]
+                        baseColorFactor=[0.8, 0.8, 0.8, 1]
                     )
                 ),
             ],
@@ -84,9 +85,10 @@ class GltfLibCanvas(Canvas):
         )
         point_accessor = len(self.gltf.accessors) - 1
 
-
-        for n,indices in enumerate(_split(np.arange(len(vertices), dtype="uint8"), np.nan, vertices[:,0])):
-            indices_binary_blob = (indices-n).flatten().tobytes()
+        for indices in _split(np.arange(len(vertices), dtype="uint8"), np.nan, vertices[:,0]):
+            # here, n adjusts indices by the number of nan rows that were removed so far
+            n  = sum(np.isnan(vertices[:indices[0],0]))
+            indices_binary_blob = (indices - n).flatten().tobytes()
             self.gltf.accessors.append(
                 pygltflib.Accessor(
                     bufferView=self._push_data(indices_binary_blob),
@@ -154,8 +156,38 @@ class GltfLibCanvas(Canvas):
         self.gltf.nodes.append(pygltflib.Node(mesh=len(self.gltf.meshes)-1))
         self.gltf.scenes[0].nodes.append(len(self.gltf.nodes)-1)
 
+
+    def show(self):
+        import bottle
+        import textwrap
+
+        page = textwrap.dedent("""
+          <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+          <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+          <head>
+          <meta charset="utf-8">
+          <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+          </head>
+          <body>
+            <model-viewer alt="rendering"
+                          src="./mesh.glb"
+                          ar
+                          style="width: 100%; height: 1000px;"
+                          shadow-intensity="1" camera-controls touch-action="pan-y">
+            </model-viewer>
+          </body>
+          </html>
+        """)
+
+
+        glb = b"".join(self.gltf.save_to_bytes())
+        app = bottle.Bottle()
+        app.route("/")(lambda : page )
+        app.route("/mesh.glb")(lambda : glb)
+        bottle.run(app, host="localhost", port=8080)
+
     def write(self, filename=None):
-        import trimesh
         opts = self.config
 
         glb = b"".join(self.gltf.save_to_bytes())

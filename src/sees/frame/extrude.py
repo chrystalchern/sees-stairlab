@@ -94,9 +94,11 @@ def draw_extruded_frames(artist, state=None, options=None):
             for j,idx in enumerate(np.array(triang)) for i in idx[IDX[j%2]]
         ])
 
+        print(tri_points)
+
     artist.canvas.plot_lines(tri_points,
-                               color="black" if state is not None else "#808080",
-                               width=4)
+                             color="black" if state is not None else "#808080",
+                             width=4)
 
 class so3:
     @classmethod
