@@ -1,4 +1,5 @@
 import os
+import sys
 from sees import config, RenderError
 
 
@@ -155,8 +156,13 @@ def parse_args(argv)->dict:
             elif arg == "--default-section":
                 opts["default_section"] = np.loadtxt(next(args))
 
-            elif arg == "--standard-section":
-                opts["standard_section"] = next(args)
+
+            elif arg == "--extrude-default":
+                opts["model_config"]["extrude_default"] = next(args)
+
+            elif arg == "--extrude-outline":
+                # outline used for everything
+                opts["model_config"]["extrude_outline"] = next(args)
 
 
             elif arg[:2] == "-m":
