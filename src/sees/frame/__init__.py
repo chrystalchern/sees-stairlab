@@ -181,7 +181,38 @@ class FrameArtist:
     model: "FrameModel"
     canvas: "Canvas"
 
-    def __init__(self, model, response=None, ndf=None, loc=None, vert=2, **kwds):
+    def __init__(self, model_data, response=None, ndf=None, loc=None, vert=2, **kwds):
+        config = Config()
+        if "config" in kwds:
+            apply_config(kwds.pop("config"), config)
+
+        apply_config(kwds, config)
+        self.config = config
+
+        canvas_type = config.get("canvas", "matplotlib")
+        if not isinstance(canvas_type, str):
+            self.canvas = canvas_type
+        elif canvas_type == "matplotlib":
+            import sees.canvas.mpl
+            self.canvas = sees.canvas.mpl.MatplotlibCanvas(**config["canvas_config"])
+        elif canvas_type == "femgl":
+            import sees.canvas.femgl
+            self.canvas = sees.canvas.femgl.FemGlCanvas(self.model, **config["canvas_config"])
+        elif canvas_type == "plotly":
+            import sees.canvas.ply
+            self.canvas = sees.canvas.ply.PlotlyCanvas(**config["canvas_config"])
+        elif canvas_type == "gltf":
+            import sees.canvas.gltf
+            self.canvas = sees.canvas.gltf.GltfLibCanvas(**config["canvas_config"])
+        elif canvas_type == "trimesh":
+            import sees.canvas.tri
+            self.canvas = sees.canvas.tri.TrimeshCanvas(**config["canvas_config"])
+        else:
+            raise ValueError("Unknown canvas type " + str(canvas_type))
+
+        self.canvas.config = config
+
+
         self.ndm = 3
 
         if ndf is None:
@@ -199,7 +230,7 @@ class FrameArtist:
 
         self._plot_rotation = R
 
-        self.model = FrameModel(model, shift=loc, rot=R, **kwds.get("model_config", {}))
+        self.model = FrameModel(model_data, shift=loc, rot=R, **kwds.get("model_config", {}))
 
         # Create permutation matrix
         if ndf == 3:
@@ -216,38 +247,8 @@ class FrameArtist:
 
         self.dofs2plot = block_diag(*[R]*2)@P
 
-
         self.displ_states = {} # defaultdict(lambda : np.zeros((len(self.model["nodes"]), 6)))
 
-
-        config = Config()
-        if "config" in kwds:
-            apply_config(kwds.pop("config"), config)
-
-        apply_config(kwds, config)
-        self.config = config
-
-
-        plotter = config.get("plotter", "matplotlib")
-        if plotter == "matplotlib":
-            import sees.canvas.mpl
-            self.canvas = sees.canvas.mpl.MatplotlibCanvas(**config["canvas"])
-        elif plotter == "femgl":
-            import sees.canvas.femgl
-            self.canvas = sees.canvas.femgl.FemGlCanvas(self.model, **config["canvas"])
-        elif plotter == "plotly":
-            import sees.canvas.ply
-            self.canvas = sees.canvas.ply.PlotlyCanvas(**config["canvas"])
-        elif plotter == "gltf":
-            import sees.canvas.gltflib
-            self.canvas = sees.canvas.gltflib.GltfLibCanvas(**config["canvas"])
-        elif plotter == "trimesh":
-            import sees.canvas.tri
-            self.canvas = sees.canvas.tri.TrimeshCanvas(**config["canvas"])
-        else:
-            raise ValueError("Unknown plotter " + str(plotter))
-
-        self.canvas.config = config
 
     def add_point_displacements(self, displ, scale=1.0, name=None):
         displ_array = self.displ_states[name]

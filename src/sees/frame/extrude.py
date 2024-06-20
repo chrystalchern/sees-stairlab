@@ -7,6 +7,15 @@ import shps.curve
 
 
 def draw_extruded_frames(artist, state=None, options=None):
+    #
+    # |----------------o------------------------------
+    # |        |      /|
+    #          |    /  |
+    #          |  /    |
+    #          |/      |
+    # |--------o-------o------------------------------
+    #
+    #
     ndm = 3
 
     model = artist.model
@@ -67,6 +76,8 @@ def draw_extruded_frames(artist, state=None, options=None):
 
         I += N*noe
 
+    triang = [list(reversed(i)) for i in triang]
+
     artist.canvas.plot_mesh(coords, triang,
                               color   = "gray" , #if state is not None else "white",
                               opacity = None   if state is not None else 0.2
@@ -82,6 +93,8 @@ def draw_extruded_frames(artist, state=None, options=None):
         (0, 1)
     ))
 
+    triang = [list(reversed(i)) for i in triang]
+
     nan = np.zeros(artist.ndm)*np.nan
     coords = np.array(coords)
     if "extrude.sections" in options["show_objects"]:
@@ -94,7 +107,7 @@ def draw_extruded_frames(artist, state=None, options=None):
             for j,idx in enumerate(np.array(triang)) for i in idx[IDX[j%2]]
         ])
 
-        print(tri_points)
+#       print(tri_points)
 
     artist.canvas.plot_lines(tri_points,
                              color="black" if state is not None else "#808080",
@@ -120,6 +133,7 @@ def _add_moment(artist, loc=None, axis=None):
     for i in mesh_data.cells:
         if i.type == "triangle":
             triangles =  i.data #mesh_data.cells['triangle']
+            break;
 
     artist.canvas.plot_mesh(coords, triangles)
 

@@ -13,11 +13,27 @@ class Model:
     def cells(self)->dict:
         pass
 
-    def filter_cells(self, filter=None):
-        pass
+    def node_iter(self): ...
 
-    def iter_cells(self, filt=None):
-        pass
+    def node_location(self, tag): ...
+
+    def node_information(self, tag): ...
+
+    def cell_iter(self, filt=None): ...
+
+    def cell_type(self, tag):       ... # line triangle quadrilateral 
+
+    def cell_exterior(self, tag):   ...
+
+    def cell_interior(self, tag):   ...
+
+    def cell_location(self, tag):   ...
+
+    def cell_outline(self,  tag):   ...
+
+    def cell_orientation(self, tag): ...
+
+    def cell_information(self, tag): ...
 
 class SolidModel:
     pass
@@ -84,7 +100,6 @@ class FrameModel:
 #   sections
 #   prototypes
 
-
     def __getitem__(self, key):
         return self._data[key]
 
@@ -100,7 +115,6 @@ class FrameModel:
         import sees.frame
         if "yvec" in el:
             return sees.frame.orientation(el["crd"], el["trsfm"]["yvec"])
-        pass
 
     def frame_outline(self, tag):
         if self._frame_outlines is None:
@@ -115,6 +129,7 @@ class FrameModel:
 
 
     def __init__(self, sam:dict, shift = None, rot=None, **kwds):
+
         """
         Process OpenSees JSON output and return dict with the form:
 

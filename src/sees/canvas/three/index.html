@@ -14,8 +14,12 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/libs/fflate.min.js"></script></head>
 
 <body>
+    <button id="screenshot" type="button">Save Image</button>
+    <canvas id='sees-canvas'></canvas>
+
     <script>
         let scene, camera, renderer;
+        const canvas = document.querySelector('#sees-canvas');
 
         function init() {
             scene = new THREE.Scene();
@@ -53,19 +57,33 @@
             light4.position.set(-500,300,0);
             scene.add(light4);
 
-            renderer = new THREE.WebGLRenderer({antialias:true});
+            renderer = new THREE.WebGLRenderer({
+              canvas,
+              alpha: true,
+              premultipliedAlpha: false
+              // antialias:true
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            // document.body.appendChild(renderer.domElement);
 
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.addEventListener('change', render);
 
             let loader = new THREE.GLTFLoader();
             loader.load('/model.glb', function(gltf){
-                //Reduce the Car size by half
+                //Reduce the model size by half
+                gltf.scene.traverse(child => {
+                  if (child.isMesh)
+                    child.scale.set(0.5, 0.5, 0.5)
+                });
 //              car = gltf.scene.children[0];
 //              car.scale.set(0.5, 0.5, 0.5);
                 scene.add(gltf.scene);
+
+//              var vnh = new THREE.VertexNormalsHelper( gltf.scene.children[0], // gltf.asset, 
+//                                                       1, 0xff0000 );
+//              scene.add( vnh );
+
                 animate();
             });
         }
@@ -78,6 +96,29 @@
           renderer.render(scene, camera);
         }
         init();
+
+        //
+        // Screenshot
+        //
+        document.querySelector('#screenshot').addEventListener('click', () => {
+            render();
+            canvas.toBlob((blob) => {
+              saveBlob(blob, `screencapture-${canvas.width}x${canvas.height}.png`);
+            });
+        });
+
+        const saveBlob = (function() {
+          const a = document.createElement('a');
+          document.body.appendChild(a);
+          a.style.display = 'none';
+          return function saveData(blob, fileName) {
+             const url = window.URL.createObjectURL(blob);
+             a.href = url;
+             a.download = fileName;
+             a.click();
+          };
+        }());
+
     </script>
 
 </body>
