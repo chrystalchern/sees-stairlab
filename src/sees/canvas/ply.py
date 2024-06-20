@@ -3,12 +3,15 @@ from .canvas import Canvas
 import numpy as np
 
 class PlotlyCanvas(Canvas):
+    vertical = 3
+
     def __init__(self, config=None):
         self.data = []
         self.config = config
         self.annotations = []
 
     def show(self):
+
         self.fig.show(renderer="browser")
 
     def build(self):
@@ -75,9 +78,9 @@ class PlotlyCanvas(Canvas):
             with open(opts["write_file"],"w+") as f:
                 f.write(html)
 
-
         elif "png" in filename:
             self.fig.write_image(filename, width=1920, height=1080)
+
         elif "json" in opts["write_file"]:
             with open(opts["write_file"],"w+") as f:
                 self.fig.write_json(f)

@@ -4,6 +4,9 @@ from .canvas import Canvas
 from ..views import VIEWS
 
 class MatplotlibCanvas(Canvas):
+    # vertical direction is the third coordinate
+    vertical = 3
+
     def __init__(self, ndm=3, ax=None):
 
         self.ndm = ndm
