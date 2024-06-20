@@ -1,5 +1,9 @@
+#
+# Command line parsing
+#
 import os
 import sys
+import json
 from sees import config, RenderError
 
 
@@ -73,6 +77,9 @@ def parse_args(argv)->dict:
 
         config.apply_config(presets,opts)
 
+#   canvas_config
+#   artist_config
+
     args = iter(argv[1:])
     for arg in args:
         try:
@@ -82,11 +89,11 @@ def parse_args(argv)->dict:
 
 
             elif arg == "--gnu":
-                opts["plotter"] = "gnu"
+                opts["canvas"] = "gnu"
             elif arg == "--plotly":
-                opts["plotter"] = "plotly"
+                opts["canvas"] = "plotly"
             elif arg == "--canvas":
-                opts["plotter"] = next(args)
+                opts["canvas"] = next(args)
 
             elif arg == "--install":
                 try: install_me(next(args))
@@ -94,21 +101,15 @@ def parse_args(argv)->dict:
                 except StopIteration: install_me()
                 return None
 
+            elif arg[:2] == "-o":
+                filename = arg[2:] if len(arg) > 2 else next(args)
+                opts["write_file"] = filename
+                if "html" in filename or "json" in filename:
+                    opts["canvas"] = "plotly"
+
             elif arg == "--version":
                 print(__version__)
                 return None
-
-            elif arg[:2] == "-d":
-                node_dof = arg[2:] if len(arg) > 2 else next(args)
-                for nd in node_dof.split(","):
-                    node, dof = nd.split(":")
-                    opts["displ"][int(node)].append(dof_index(dof))
-
-            elif arg[:6] == "--disp":
-                node_dof = next(args)
-                for nd in node_dof.split(","):
-                    node, dof = nd.split(":")
-                    opts["displ"][int(node)].append(dof_index(dof))
 
             elif arg == "--conf":
                 with open(next(args), "r") as f:
@@ -124,18 +125,6 @@ def parse_args(argv)->dict:
                 for key in keys[:-1]:
                     d = d[key]
                 d[keys[-1]] = val
-
-
-            elif arg[:2] == "-s":
-                opts["scale"] = float(arg[2:]) if len(arg) > 2 else float(next(args))
-            elif arg == "--scale":
-                scale = next(args)
-                if "=" in scale:
-                    # looks like --scale <object>=<scale>
-                    k,v = scale.split("=")
-                    opts["objects"][k]["scale"] = float(v)
-                else:
-                    opts["scale"] = float(scale)
 
             elif arg == "--vert":
                 opts["vert"] = int(next(args))
@@ -165,22 +154,47 @@ def parse_args(argv)->dict:
                 opts["model_config"]["extrude_outline"] = next(args)
 
 
+            #
+            # STATE
+            #
+            elif arg[:2] == "-s":
+                opts["scale"] = float(arg[2:]) if len(arg) > 2 else float(next(args))
+
+            elif arg == "--scale":
+                scale = next(args)
+                if "=" in scale:
+                    # looks like --scale <object>=<scale>
+                    k,v = scale.split("=")
+                    opts["objects"][k]["scale"] = float(v)
+                else:
+                    opts["scale"] = float(scale)
+
             elif arg[:2] == "-m":
                 opts["mode_num"] = int(arg[2]) if len(arg) > 2 else int(next(args))
 
             elif arg == "--time":
-                opts["time"] = next(args)
+                opts["time"] = json.loads(next(args))
 
-            elif arg[:2] == "-o":
-                filename = arg[2:] if len(arg) > 2 else next(args)
-                opts["write_file"] = filename
-                if "html" in filename or "json" in filename:
-                    opts["plotter"] = "plotly"
+            elif arg[:2] == "-d":
+                node_dof = arg[2:] if len(arg) > 2 else next(args)
+                for nd in node_dof.split(","):
+                    node, dof = nd.split(":")
+                    opts["displ"][int(node)].append(dof_index(dof))
+
+            elif arg[:6] == "--disp":
+                node_dof = next(args)
+                for nd in node_dof.split(","):
+                    node, dof = nd.split(":")
+                    opts["displ"][int(node)].append(dof_index(dof))
+
 
             # Final check on options
             elif arg[0] == "-" and len(arg) > 1:
                 raise RenderError(f"ERROR - unknown option '{arg}'")
 
+            #
+            # Positional
+            #
             elif not opts["sam_file"]:
                 if arg == "-": arg = sys.stdin
                 opts["sam_file"] = arg
