@@ -5,19 +5,19 @@
 from collections import defaultdict
 
 Config = lambda : {
-  "model_config": {},
-  "show_objects": ["frames", "frames.displ", "nodes", "legend", "elastica"],
-  "mode_num"    : None,
-  "hide_objects": ["origin"],
-  "sam_file":     None,
-  "res_file":     None,
-  "write_file":   None,
-  "displ":        defaultdict(list),
-  "scale":        100.0,
-  "vert":         2,
-  "view":         "iso",
-  "plotter":      "matplotlib",
-  "canvas":       {}, # kwds for canvas
+  "model_config":  {},
+  "canvas_config": {}, # kwds for canvas
+  "show_objects":  ["frames", "frames.displ", "nodes", "legend", "elastica"],
+  "mode_num"    :  None,
+  "hide_objects":  ["origin"],
+  "sam_file":      None,
+  "res_file":      None,
+  "write_file":    None,
+  "displ":         defaultdict(list),
+  "scale":         100.0,
+  "vert":          2,
+  "view":          "iso",
+  "canvas":        "matplotlib",
 
   "camera": {
       "view": "iso",               # iso | plan| elev[ation] | sect[ion]
