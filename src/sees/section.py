@@ -1,14 +1,19 @@
 #!/bin/env python
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot  as plt
+import matplotlib.patches as mplp
+import matplotlib.lines   as lines
 import matplotlib.collections
 from math import sqrt
 
-def show(): plt.show()
+def show():
+    plt.show()
 
 def render(s, ax=None, show=None, **kwds):
+
     if isinstance(show, str):
         show = [show]
+
     elif show is None:
         show = ["fiber", "patch", "layer"]
 
@@ -17,12 +22,13 @@ def render(s, ax=None, show=None, **kwds):
 
     return MatplotlibSectionCanvas(ax=ax).plot_section(s, show=show, **kwds)
 
+
 class MatplotlibSectionCanvas:
     def __init__(self, ax=None, **kwds):
         self.ax = ax
         self.kwds = kwds
+
     def get_section_layers(self, section, **kwds):
-        import matplotlib.lines as lines
         for layer in section.layers:
             if hasattr(layer, "plot_opts"):
                 options = layer.plot_opts
@@ -32,16 +38,16 @@ class MatplotlibSectionCanvas:
             if hasattr(layer, "vertices"):
                 yield lines.Line2D(*np.asarray(layer.vertices).T, **options)
 
-    def get_section_patches(self, section, facecolor="grey", edgecolor="grey", **kwds):
+    def _get_patches(self, section, facecolor="grey", edgecolor="grey", **kwds):
         """
         Currently a circ must be represented by either an annulus or circle. this
         might be a solution:
         https://docs.bokeh.org/en/latest/docs/reference/models/glyphs/arc.html
         """
-        import matplotlib.patches as mplp
         collection = []
         for patch in section.patches:
             name = patch.__class__.__name__.lower()
+
             if "circ" in name:
                 if patch.intRad:
                     width = patch.extRad - patch.intRad
@@ -55,6 +61,7 @@ class MatplotlibSectionCanvas:
                 ))
             else:
                 collection.append(mplp.Polygon(np.asarray(patch.vertices)))
+
         return matplotlib.collections.PatchCollection(
             collection,
             facecolor=facecolor,
@@ -123,7 +130,7 @@ class MatplotlibSectionCanvas:
 
         # add shapes
         if "patch" in show:
-            ax.add_collection(self.get_section_patches(section, **kwds))
+            ax.add_collection(self._get_patches(section, **kwds))
 
         if "layer" in show:
             for l in self.get_section_layers(section, **kwds):
@@ -142,24 +149,25 @@ class MatplotlibSectionCanvas:
                 ax.add_collection(c)
             else:
                 # TODO: clean this up
-                try:
-                    ax.scatter(*zip(*(f.coord for patch in section.patches for f in patch.fibers)), s=0.1)
-                except:
-                    pass
+#               try:
+#                   ax.scatter(*zip(*(f.coord for patch in section.patches for f in patch.fibers)), s=0.1)
+#               except Exception as e:
+#                   print(e)
+#                   pass
 
                 try:
-                    ax.scatter(*zip(*(f.coord for patch in section.patches for f in patch.fibers)), s=0.1)
+                    ax.scatter(*zip(*(f.coord for f in section.fibers)), s=0.1)
                 except Exception as e:
-                    # print(e)
+                    print(e)
                     pass
 
 
-                try:
-                    coords, areas = zip(*((f.coord, 20*f.area) for layer in section.layers for f in layer.fibers))
-                    ax.scatter(*zip(*coords), s=areas, color="k")
-                except Exception as e:
-                    # print(e)
-                    pass
+#               try:
+#                   coords, areas = zip(*((f.coord, 20*f.area) for layer in section.layers for f in layer.fibers))
+#                   ax.scatter(*zip(*coords), s=areas, color="k")
+#               except Exception as e:
+#                   # print(e)
+#                   pass
 
         # show centroid
         #ax.scatter(*section.centroid)

@@ -45,7 +45,8 @@ def draw_extruded_frames(artist, state=None, options=None):
         else:
             outline = outline*0.98
             X = np.array(el["crd"])
-            R = [sees.frame.orientation(el["crd"], el["trsfm"]["yvec"]).T]*N
+#           R = [sees.frame.orientation(el["crd"], el["trsfm"]["yvec"]).T]*N
+            R = [artist.model.frame_orientation(el["name"]).T]*N
 
 
 
@@ -107,8 +108,6 @@ def draw_extruded_frames(artist, state=None, options=None):
             for j,idx in enumerate(np.array(triang)) for i in idx[IDX[j%2]]
         ])
 
-#       print(tri_points)
-
     artist.canvas.plot_lines(tri_points,
                              color="black" if state is not None else "#808080",
                              width=4)
@@ -167,15 +166,15 @@ def _render(sam_file, res_file=None, noshow=False, **opts):
     draw_extruded_frames(artist, options=opts)
 
     # -----------------------------------------------------------
-#   if "IterationHistory" in sam_file:
-    soln = sees.state.read_state(sam_file, artist.model, **opts)
-    if "time" not in opts:
-        soln = soln[soln.times[-1]]
+    if "IterationHistory" in model:
+        soln = sees.state.read_state(sam_file, artist.model, **opts)
+        if "time" not in opts:
+            soln = soln[soln.times[-1]]
 
-    draw_extruded_frames(artist, soln, opts)
-    # -----------------------------------------------------------
-    _add_moment(artist)
-    # -----------------------------------------------------------
+        draw_extruded_frames(artist, soln, opts)
+        # -----------------------------------------------------------
+        _add_moment(artist)
+        # -----------------------------------------------------------
 
     camera = dict(
       up=dict(x=0, y=0, z=1),

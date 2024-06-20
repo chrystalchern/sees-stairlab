@@ -1,14 +1,17 @@
-
+#
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 
 
-class Plotter:
-    def __init__(self):
+class PlaneArtist:
+    def __init__(self, model, **kwds):
+
         import matplotlib.pyplot as plt
         _,self.ax = plt.subplots()
 
-    def nodes(self, nodes):
+        self.model = model
+
+    def _draw_nodes(self, nodes):
         self.ax.scatter(*zip(*nodes.values()))
         for k,v in nodes.items():
             self.ax.annotate(k, v)
@@ -128,5 +131,4 @@ def render(mesh, solution, ax=None,
         plt.colorbar(contours, ax=ax)
     ax.axis('equal')
     return ax
-
 

@@ -1,16 +1,14 @@
 # Claudio Perez
 """
-glTF uses a right-handed coordinate system, that is, the cross product of +X and +Y yields +Z. 
-glTF defines +Y as up.
-The front of a glTF asset faces +Z.
-The units for all linear distances are meters.
-All angles are in radians.
-Positive rotation is counterclockwise.
-
-Rotations are given as quaternions stored as a tuple (x,y,z,w),
-where the w-component is the cosine of half of the rotation angle.
-For example, the quaternion [ 0.259, 0.0, 0.0, 0.966 ] describes a rotation
-about 30 degrees, around the x-axis.
+- glTF uses a right-handed coordinate system, that is, the cross product of +X and +Y yields +Z.
+- glTF defines +Y as up.
+- The front of a glTF asset faces +Z.
+- All angles are in radians.
+- Positive rotation is counterclockwise.
+- Rotations are given as quaternions stored as a tuple (x,y,z,w),
+  where the w-component is the cosine of half of the rotation angle.
+  For example, the quaternion [ 0.259, 0.0, 0.0, 0.966 ] describes a rotation
+  about 30 degrees, around the x-axis.
 """
 from pathlib import Path
 import numpy as np
@@ -73,6 +71,30 @@ class GltfLibCanvas(Canvas):
                     )
                 ),
                 pygltflib.Material(
+                    name="red",
+                    doubleSided=True,
+                    alphaMode=pygltflib.MASK,
+                    pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
+                        baseColorFactor=[1, 0, 0, 1]
+                    )
+                ),
+                pygltflib.Material(
+                    name="green",
+                    doubleSided=True,
+                    alphaMode=pygltflib.MASK,
+                    pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
+                        baseColorFactor=[0, 1, 0, 1]
+                    )
+                ),
+                pygltflib.Material(
+                    name="blue",
+                    doubleSided=True,
+                    alphaMode=pygltflib.MASK,
+                    pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
+                        baseColorFactor=[0, 0, 1, 1]
+                    )
+                ),
+                pygltflib.Material(
                     name="gray",
                     doubleSided=True,
                     alphaMode=pygltflib.MASK,
@@ -86,9 +108,138 @@ class GltfLibCanvas(Canvas):
         )
         self.gltf._glb_data = bytes()
 
+        self._init_nodes()
+
         # Map pairs of (color, alpha) to material's index in material list
         self._color = {(m.name,m.pbrMetallicRoughness.baseColorFactor[3]): i
                        for i,m in enumerate(self.gltf.materials)}
+
+    def _init_nodes(self):
+        #
+        #
+        #
+        index_t = "uint8"
+        points = np.array(
+            [
+                [-1.0, -1.0,  1.0],
+                [ 1.0, -1.0,  1.0],
+                [-1.0,  1.0,  1.0],
+                [ 1.0,  1.0,  1.0],
+                [ 1.0, -1.0, -1.0],
+                [-1.0, -1.0, -1.0],
+                [ 1.0,  1.0, -1.0],
+                [-1.0,  1.0, -1.0],
+            ],
+            dtype="float32",
+        )/100
+
+        triangles = np.array(
+            [
+                [0, 1, 2],
+                [3, 2, 1],
+                [1, 0, 4],
+                [5, 4, 0],
+                [3, 1, 6],
+                [4, 6, 1],
+                [2, 3, 7],
+                [6, 7, 3],
+                [0, 2, 5],
+                [7, 5, 2],
+                [5, 7, 4],
+                [6, 4, 7],
+            ],
+            dtype=index_t,
+        )
+        triangles_binary_blob = triangles.flatten().tobytes()
+        points_binary_blob = points.tobytes()
+
+        self.gltf.accessors.extend([
+            pygltflib.Accessor(
+                bufferView=self._push_data(triangles_binary_blob,
+                                           pygltflib.ELEMENT_ARRAY_BUFFER),
+                componentType=GLTF_T[index_t],
+                count=triangles.size,
+                type=pygltflib.SCALAR,
+                max=[int(triangles.max())],
+                min=[int(triangles.min())],
+            ),
+            pygltflib.Accessor(
+                bufferView=self._push_data(points_binary_blob,
+                                           pygltflib.ARRAY_BUFFER),
+                componentType=GLTF_T[self.float_t],
+                count=len(points),
+                type=pygltflib.VEC3,
+                max=points.max(axis=0).tolist(),
+                min=points.min(axis=0).tolist(),
+            )
+        ])
+
+
+        indices_access = len(self.gltf.accessors)-2 # indices
+        points_access  = len(self.gltf.accessors)-1 # points
+        self.gltf.meshes.append(
+               pygltflib.Mesh(
+                 primitives=[
+                     pygltflib.Primitive(
+                         mode=pygltflib.TRIANGLES,
+                         attributes=pygltflib.Attributes(POSITION=points_access),
+                         material=0,#material,
+                         indices=indices_access
+                     )
+                 ]
+               )
+        )
+
+        self._node_mesh = len(self.gltf.meshes) - 1
+
+    def _use_asset(self, name, scale, rotation, material):
+        pass
+
+#   def plot_vectors(self, locs, vecs, **kwds):
+
+#       ne = vecs.shape[0]
+#       for j in range(3):
+#           X = np.zeros((ne*3, 3))*np.nan
+#           for i in range(j,ne,3):
+#               X[i*3,:] = locs[i]
+#               X[i*3+1,:] = locs[i] + vecs[i]
+
+#           color = kwds.get("color", ("red", "blue", "green")[j])
+
+#           # _label = label if label is not None else ""
+#           label = kwds.get("label", "")
+#           if isinstance(label, list):
+#               label = label[j]
+#           self.data.append({
+#               "name": label,
+#               "type": "scatter3d",
+#               "mode": "lines",
+#               "x": X.T[0], "y": X.T[1], "z": X.T[2],
+#               "line": {"color": color, "width": 4},
+#               "hoverinfo":"skip",
+#               "showlegend": False
+#           })
+
+    def plot_nodes(self, coords, label = None, props=None, data=None, **kwds):
+        name = label or "nodes"
+        x,y,z = coords.T
+
+#       indices_access, points_access = self._node_access
+
+        material = self._get_material(kwds.get("color", "black"),
+                                      kwds.get("alpha",      1))
+
+
+        for coord in coords:
+            self.gltf.nodes.append(pygltflib.Node(
+                    mesh=self._node_mesh,
+                    #rotation=self._rotation,
+                    translation=coord.tolist(),
+                )
+            )
+            self.gltf.scenes[0].nodes.append(len(self.gltf.nodes)-1)
+
+
 
     def _get_material(self, color, alpha=1):
         if (color, alpha) in self._color:

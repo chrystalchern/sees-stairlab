@@ -1,3 +1,4 @@
+# Claudio Perez
 import numpy as np
 
 class Model:
@@ -13,13 +14,13 @@ class Model:
     def cells(self)->dict:
         pass
 
-    def node_iter(self): ...
+    def iter_nodes(self): ...
 
     def node_location(self, tag): ...
 
     def node_information(self, tag): ...
 
-    def cell_iter(self, filt=None): ...
+    def iter_cells(self, filt=None): ...
 
     def cell_type(self, tag):       ... # line triangle quadrilateral 
 
@@ -88,7 +89,8 @@ def _get_frame_outlines(model):
         #       sections
         elem["name"]: np.array(sections[elem["sections"][0]])
 
-        for elem in model["assembly"].values() if "sections" in elem and elem["sections"][0] in sections
+        for elem in model["assembly"].values()
+            if "sections" in elem and elem["sections"][0] in sections
     }
 
     return outlines
@@ -111,10 +113,36 @@ class FrameModel:
     def cells(self):
         return {k: e["nodes"] for k, e in self["assembly"].items()}
 
-    def frame_orientation(self, el):
+    def frame_orientation(self, tag):
         import sees.frame
-        if "yvec" in el:
-            return sees.frame.orientation(el["crd"], el["trsfm"]["yvec"])
+        el = self["assembly"][tag]
+
+        xyz = el["crd"]
+        dx = xyz[-1] - xyz[0]
+        L = np.linalg.norm(dx)
+        e1 = dx/L
+
+        if "yvec" in el["trsfm"] and el["trsfm"]["yvec"] is not None:
+            e2 = np.array(el["trsfm"]["yvec"])
+            v3 = np.cross(e1,e2)
+            norm_v3 = np.linalg.norm(v3)
+            e3 = v3 / norm_v3
+            return np.stack([e1,e2,e3])
+
+        elif "vecInLocXZPlane" in el["trsfm"]:
+            v13 = np.atleast_1d(el["trsfm"]["vecInLocXZPlane"])
+            v2 = -np.cross(e1,v13)
+            norm_v2 = np.linalg.norm(v2)
+            if norm_v2 < 1e-8:
+                v2 = -np.cross(e1,np.array([*reversed(vert)]))
+                norm_v2 = np.linalg.norm(v2)
+            e2 = v2 / norm_v2
+            v3 =  np.cross(e1,e2)
+            e3 = v3 / np.linalg.norm(v3)
+            return np.stack([e1,e2,e3])
+        else:
+            print(el)
+
 
     def frame_outline(self, tag):
         if self._frame_outlines is None:
@@ -169,7 +197,7 @@ class FrameModel:
 
 
         try:
-            trsfm = {t["name"]: t for t in sam["properties"]["crdTransformations"]}
+            trsfm = {int(t["name"]): t for t in sam["properties"]["crdTransformations"]}
         except KeyError:
             trsfm = {}
 
@@ -177,8 +205,8 @@ class FrameModel:
           e["name"]: dict(
             **e,
             crd=np.array([nodes[n]["crd"] for n in e["nodes"]], dtype=float),
-            trsfm=trsfm[e["crdTransformation"]]
-                if "crdTransformation" in e and e["crdTransformation"] in trsfm
+            trsfm=trsfm[int(e["crdTransformation"])]
+                if "crdTransformation" in e and int(e["crdTransformation"]) in trsfm
                 else dict(yvec=R@e["yvec"] if "yvec" in e else None)
           ) for e in geom["elements"]
         }

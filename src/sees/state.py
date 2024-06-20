@@ -1,3 +1,5 @@
+# Claudio Perez
+# Summer 2024
 import yaml
 import json
 import numpy as np
@@ -9,7 +11,6 @@ class State:
     time: float
 #   node_array : np.array
 #   cell_array : np.array
-
 
 
 def form_state(data):
@@ -204,7 +205,8 @@ class GroupStateSO3(State):
         elem = self._model["assembly"][tag]
 
         # change to model.elem_rotation
-        R = sees.frame.orientation(elem["crd"], elem["trsfm"]["yvec"])
+#       R = sees.frame.orientation(elem["crd"], elem["trsfm"]["yvec"])
+        R = self._model.frame_orientation(tag) #elem["crd"], elem["trsfm"]["yvec"])
         Rref  = R.T #Rotation.from_matrix(R.T)
         return np.array([
             self.node_array(n)@Rref for n in self._cells[tag]
@@ -326,9 +328,7 @@ class GroupSeriesSO3(Series):
         }
 
 
-
     def __getitem__(self, time)->GroupStateSO3:
         return self._hist[time]["converged"]
-
 
 

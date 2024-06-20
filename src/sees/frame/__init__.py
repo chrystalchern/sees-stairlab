@@ -505,10 +505,15 @@ class FrameArtist:
         xyz, uvw = np.nan*np.zeros((2, ne, 3, 3))
 
         for i,el in enumerate(self.model["assembly"].values()):
+            axes = self.model.frame_orientation(el["name"]) #el["crd"], el["trsfm"]["yvec"])
+            if axes is None:
+                continue
+
             scale = np.linalg.norm(el["crd"][-1] - el["crd"][0])/10
             coord = sum(i for i in el["crd"])/len(el["nodes"])
             xyz[i,:,:] = np.array([coord]*3)
-            uvw[i,:,:] = scale*orientation(el["crd"], el["trsfm"]["yvec"])
+            uvw[i,:,:] = scale*axes
+
 #           self.canvas.plot_vectors(np.array([coord]*3), scale*rotation(el["crd"], el["trsfm"]["yvec"]))
         self.canvas.plot_vectors(xyz.reshape(ne*3,3), uvw.reshape(ne*3,3))
 
