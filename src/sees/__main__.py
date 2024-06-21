@@ -114,13 +114,37 @@ def main():
         sys.exit()
 
     try:
-        sees.render(**config)
+        artist = sees.render(**config)
+
+        artist.draw()
+
+        # write plot to file if output file name provided
+
+        if config["write_file"]:
+            artist.write(config["write_file"])
+            return
+
+        # Otherwise either create popup, or start server
+        elif hasattr(artist.canvas, "popup"):
+            artist.canvas.popup()
+
+        elif hasattr(artist.canvas, "to_glb"):
+            import sees.server
+            server = sees.server.Server(glb=artist.canvas.to_glb(),
+                                        viewer=config["viewer_config"].get("name", None))
+            server.run(config["server_config"].get("port", None))
+
+        elif hasattr(artist.canvas, "to_html"):
+            import sees.server
+            server = sees.server.Server(html=artist.canvas.to_html())
+            server.run(config["server_config"].get("port", None))
 
     except (FileNotFoundError, RenderError) as e:
         # Catch expected errors to avoid printing an ugly/unnecessary stack trace.
         print(e, file=sys.stderr)
         print("         Run '{NAME} --help' for more information".format(NAME=NAME), file=sys.stderr)
         sys.exit()
+
 
 if __name__ == "__main__":
     main()

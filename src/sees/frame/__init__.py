@@ -21,12 +21,9 @@ from sees.model import FrameModel
 # and carrying out other miscellaneous operations.
 
 
-def _is_basic_frame(el):
+def _is_frame(el):
     return     "beam" in el["type"].lower() \
             or "dfrm" in el["type"].lower()
-
-#   return "zero" not in el["type"].lower()
-
 
 
 def get_section_geometries(model, config=None):
@@ -358,24 +355,32 @@ class FrameArtist:
 
 
     def plot_chords(self, assembly, state=None, layer=None):
-        frame = self.model
-        nodes = self.model["nodes"]
+        model = self.model
         ndm   = self.model["ndm"]
 
         N = 2
-        coords = np.zeros((len(frame["assembly"])*(N+1),3))
-        coords.fill(np.nan)
+        do_lines = False
+        lines = np.zeros((len(model["assembly"])*(N+1),3))
+        lines.fill(np.nan)
 
-        for i,el in enumerate(frame["assembly"].values()):
-            coords[(N+1)*i:(N+1)*i+N,:] = np.linspace(el["crd"][0], el["crd"][-1], N)
+        triangles = []
+        nodes = model.node_position(state=state)
 
-            # exclude zero-length elements
-            if "zero" not in el["type"].lower() and state is not None:
-                coords[(N+1)*i:(N+1)*i+N,:] += [
-                    state.node_array(n)[:ndm] for n in (el["nodes"][0], el["nodes"][-1])
-                ]
+        for i,(tag,el) in enumerate(model["assembly"].items()):
+            position = model.cell_position(tag, state)[[0,-1],:]
+            if _is_frame(el):
+                do_lines = True
+                lines[(N+1)*i:(N+1)*i+N,:] = position #np.linspace(el["crd"][0], el["crd"][-1], N)
 
-        self.canvas.plot_lines(coords[:,:self.ndm])
+            else:
+                triangles.extend(model.cell_triangles(tag))
+
+        if do_lines:
+            self.canvas.plot_lines(lines[:,:self.ndm])
+
+
+        if len(triangles) > 0:
+            self.canvas.plot_mesh(nodes, np.array(triangles))
 
 
     def plot_extruded_frames(self, state=None, rotations=None):
@@ -485,7 +490,7 @@ class FrameArtist:
 
         for i,(tag,el) in enumerate(frame["assembly"].items()):
             # exclude zero-length elements
-            if _is_basic_frame(el) and state is not None:
+            if _is_frame(el) and state is not None:
                 glob_displ = state.cell_array(tag).flatten()
                 vect = None #np.array(el["trsfm"]["vecInLocXZPlane"])[axes]
                 coords[(N+1)*i:(N+1)*i+N,:] = displaced_profile(el["crd"], glob_displ, vect=vect, npoints=N).T
@@ -495,10 +500,12 @@ class FrameArtist:
         self.canvas.plot_lines(coords[:, :self.ndm], color="red", label=label)
 
     def plot_nodes(self, state=None, data=None):
-        coord = self.model["coord"]
-        if state is not None:
-            coord = coord + state.node_array()[:, :3] #self.ndm]
-        self.canvas.plot_nodes(coord[:,:self.ndm], data=data)
+        coord = self.model.node_position(state=state) #self.model["coord"]
+#       if state is not None:
+#           coord = coord + state.node_array()[:, :3] #self.ndm]
+        self.canvas.plot_nodes(coord[:,:self.ndm],
+                               data=data,
+                               scale=self.config["objects"]["nodes"]["scale"])
 
     def add_triads(self):
         ne = len(self.model["assembly"])
@@ -516,12 +523,6 @@ class FrameArtist:
 
 #           self.canvas.plot_vectors(np.array([coord]*3), scale*rotation(el["crd"], el["trsfm"]["yvec"]))
         self.canvas.plot_vectors(xyz.reshape(ne*3,3), uvw.reshape(ne*3,3))
-
-#   def plot_frame_axes(self):
-#       for elem in self.model["assembly"].values():
-#           xyz = (elem["crd"][-1] + elem["crd"][0])/2
-#           uvw = np.eye(3)/np.linalg.norm(elem["crd"][-1] - elem["crd"][0])
-#           self.canvas.plot_vectors(xyz, uvw)
 
 #   def add_elem_data(self):
 #       N = 3

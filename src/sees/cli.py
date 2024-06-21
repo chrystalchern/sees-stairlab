@@ -87,14 +87,6 @@ def parse_args(argv)->dict:
                 print(HELP.format(NAME=NAME))
                 return None
 
-
-            elif arg == "--gnu":
-                opts["canvas"] = "gnu"
-            elif arg == "--plotly":
-                opts["canvas"] = "plotly"
-            elif arg == "--canvas":
-                opts["canvas"] = next(args)
-
             elif arg == "--install":
                 try: install_me(next(args))
                 # if no directory is provided, use default
@@ -123,9 +115,35 @@ def parse_args(argv)->dict:
                 d = opts
                 keys = k.split(".")
                 for key in keys[:-1]:
-                    d = d[key]
+                    if key in d:
+                        d = d[key]
+                    elif f"{key}_config" in d:
+                        d = d[f"{key}_config"]
+                    else:
+                        raise RenderError(f"Unknown config key {key}.")
+
+                # TODO: implement type casting here
                 d[keys[-1]] = val
 
+            #
+            # Viewer
+            #
+            elif arg == "--viewer":
+                opts["viewer_config"]["name"] = next(args)
+
+            #
+            # Canvas
+            #
+            elif arg == "--canvas":
+                opts["canvas"] = next(args)
+            elif arg == "--gnu":
+                opts["canvas"] = "gnu"
+            elif arg == "--plotly":
+                opts["canvas"] = "plotly"
+
+            #
+            # Artist
+            #
             elif arg == "--vert":
                 opts["vert"] = int(next(args))
 

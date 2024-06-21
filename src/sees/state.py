@@ -81,8 +81,7 @@ def read_state(res_file, model=None, only=None, time=None, scale=None, transform
 class BasicState(State):
     # spatial distribution of a solution
     def __init__(self, data, model, scale=1.0, fn=None, transform=None, time=None):
-        self._cells = model.cells
-        self._nodes = model.nodes
+        self.model  = model
         self.time   = time
 
         if isinstance(data, np.ndarray):
@@ -127,7 +126,7 @@ class BasicState(State):
         # incr: init,conv,iter
 
         return np.array([
-                u for n in self._cells[tag]
+                u for n in self.model.cell_nodes(tag)
                     for u in self.node_array(n, dof)
         ])
 
@@ -143,6 +142,7 @@ class Series:
 
 class GroupSeriesSE3(Series):
     def __init__(self, series: "StateSeries", model, **kwds):
+        self.model  = model
 
         rotation = GroupSeriesSO3(series, model, **kwds)
         position = series
@@ -159,9 +159,7 @@ class GroupSeriesSE3(Series):
 
 class GroupStateSE3(State):
     def __init__(self, data, model, time=None):
-        self._model = model
-        self._cells = model.cells
-        self._nodes = model.nodes
+        self.model  = model
         self._data  = data
         self.time   = time
         self.position = 10
@@ -175,7 +173,7 @@ class GroupStateSE3(State):
     def cell_array(self, tag, dof):
         return [
                 self.node_array(node, dof)
-                for node in self._cells[tag]
+                for node in self.model.cell_nodes(tag)
         ]
 
     def node_array(self, tag, dof):
@@ -190,26 +188,18 @@ class GroupStateSE3(State):
 
 class GroupStateSO3(State):
     def __init__(self, data, model, time=None):
-        self._model = model
-        self._cells = model.cells
-        self._nodes = model.nodes
+        self.model  = model
         self.time   = time
 
         self._data  = data
 
-
         self._R0 = Rotation.from_matrix(np.eye(3))
 
     def cell_array(self, tag):
+        Rref = self.model.frame_orientation(tag).T
 
-        elem = self._model["assembly"][tag]
-
-        # change to model.elem_rotation
-#       R = sees.frame.orientation(elem["crd"], elem["trsfm"]["yvec"])
-        R = self._model.frame_orientation(tag) #elem["crd"], elem["trsfm"]["yvec"])
-        Rref  = R.T #Rotation.from_matrix(R.T)
         return np.array([
-            self.node_array(n)@Rref for n in self._cells[tag]
+            self.node_array(n)@Rref for n in self.model.cell_nodes(tag)
         ])
 
     def node_array(self, tag):
@@ -221,7 +211,7 @@ class StateSeries(Series): # temporal distribution of states
     def __init__(self, soln: "FedeasPost", model, transform=None, scale=None,
                        recover_rotations=None):
 
-        self._model = model
+        self.model  = model
 
         self._elements  = model["assembly"]
         self._locations = None
@@ -291,15 +281,14 @@ class StateSeries(Series): # temporal distribution of states
 
 class GroupSeriesSO3(Series):
     def __init__(self, series, model, recover_rotations="init"):
-        self._cells = model.cells
-        self._nodes = model.nodes
+        self.model  = model
         self._series = series
         #
         # Reconstruct group
         #
 
         R0   = Rotation.from_matrix(np.eye(3))
-        last = {n: R0 for n in self._nodes}
+        last = {n: R0 for n in self.model.iter_node_tags()}
         hist = self._hist = {}
         time = None
         for incr in series.values(incr=recover_rotations):
@@ -314,14 +303,14 @@ class GroupSeriesSO3(Series):
 
             last = {
                 tag: Rotation.from_rotvec(incr.node_array(tag)[3:])*last[tag]
-                for tag in self._nodes
+                for tag in self.model.iter_node_tags()
             }
 
         # Recover the final converged state
         time = incr.time
         last = {
             tag: Rotation.from_rotvec(incr.node_array(tag)[3:])*last[tag]
-            for tag in self._nodes
+            for tag in self.model.iter_node_tags()
         }
         hist[time] = {
             "converged": GroupStateSO3(last, model, time=time)

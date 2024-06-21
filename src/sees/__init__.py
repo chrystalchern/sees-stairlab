@@ -118,16 +118,5 @@ def render(sam_file, res_file=None, noshow=False, ndf=6,
                                         only=config["mode_num"]))
 
 
-    # write plot to file if file name provided
-    if config["write_file"]:
-        artist.draw()
-        artist.write(config["write_file"])
-
-    else:
-        artist.draw()
-        if not noshow:
-            artist.canvas.show()
-        # artist.repl()
-
     return artist
 

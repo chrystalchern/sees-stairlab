@@ -7,6 +7,9 @@ from collections import defaultdict
 Config = lambda : {
   "model_config":  {},
   "canvas_config": {}, # kwds for canvas
+  "viewer_config": {},
+  "server_config": {},
+
   "show_objects":  ["frames", "frames.displ", "nodes", "legend", "elastica"],
   "mode_num"    :  None,
   "hide_objects":  ["origin"],
@@ -17,13 +20,13 @@ Config = lambda : {
   "scale":         100.0,
   "vert":          2,
   "view":          "iso",
-  "canvas":        "matplotlib",
 
   "camera": {
       "view": "iso",               # iso | plan| elev[ation] | sect[ion]
       "projection": "orthographic" # perspective | orthographic
   },
 
+  # Artist
   "displacements": {"scale": 100, "color": "#660505"},
 
   "objects": {
@@ -32,12 +35,16 @@ Config = lambda : {
           "displaced": {"color": "red", "npoints": 20}
       },
       "nodes": {
+          "scale": 1.0,
           "default": {"size": 3, "color": "#000000"},
           "displaced" : {},
           "fixed"  : {},
       },
       "sections": {"scale": 1.0}
   },
+
+  # Canvas
+  "canvas":        "matplotlib",
   "save_options": {
       # Options for when writing to an HTML file.
       "html": {

@@ -28,11 +28,12 @@ class Model:
 
     def cell_interior(self, tag):   ...
 
-    def cell_location(self, tag):   ...
+    def cell_orientation(self, tag): ...
+
+    def cell_position(self, tag, state):   ...
 
     def cell_outline(self,  tag):   ...
 
-    def cell_orientation(self, tag): ...
 
     def cell_information(self, tag): ...
 
@@ -105,13 +106,75 @@ class FrameModel:
     def __getitem__(self, key):
         return self._data[key]
 
-    @property
-    def nodes(self):
-        return {k: n["crd"] for k, n in self["nodes"].items()}
+#   @property
+#   def nodes(self):
+#       return {k: n["crd"] for k, n in self["nodes"].items()}
+#   @property
+#   def cells(self):
+#       return {k: e["nodes"] for k, e in self["assembly"].items()}
 
-    @property
-    def cells(self):
-        return {k: e["nodes"] for k, e in self["assembly"].items()}
+    def cell_nodes(self, tag=None):
+        if tag is None:
+            if not hasattr(self, "_cell_nodes"):
+                self._cell_nodes = {k: e["nodes"] for k, e in self["assembly"].items()}
+            return self._cell_nodes
+        else:
+            return self["assembly"][tag]["nodes"]
+
+
+    def cell_indices(self, tag=None):
+        if not hasattr(self, "_cell_indices"):
+            self._cell_indices = {
+                elem["name"]: tuple(self.node_indices(n) for n in elem["nodes"])
+                for elem in self["assembly"].values()
+            }
+
+        if tag is not None:
+            return self._cell_indices[tag]
+        else:
+            return self._cell_indices
+
+    def iter_node_tags(self):
+        for tag in self["nodes"]:
+            yield tag
+
+    def node_indices(self, tag=None):
+        if not hasattr(self, "_node_indices"):
+            self._node_indices = {
+                tag: i for i, tag in enumerate(self["nodes"])
+            }
+        return self._node_indices[tag]
+
+    def node_position(self, tag=None, state=None):
+
+        if tag is None:
+            pos = np.array([n["crd"] for n in self["nodes"].values()])
+        else:
+            pos = self["nodes"][tag]["crd"]
+
+        if state is not None:
+            pos += state.node_array(tag)
+
+        return pos
+
+    def cell_position(self, tag, state=None):
+        return np.array([ self.node_position(node, state)
+                          for node in self["assembly"][tag]["nodes"] ])
+
+    def cell_triangles(self, tag):
+        type = self["assembly"][tag]["type"].lower()
+
+        if "frm" in type or "beamcol" in type:
+            return []
+
+        elif ("quad" in type or \
+              "shell" in type and ("q" in type) or ("mitc" in type)):
+            nodes = self.cell_indices(tag)
+
+            if len(nodes) == 4:
+                return [[nodes[0], nodes[1], nodes[2]],
+                        [nodes[2], nodes[3], nodes[0]]]
+        return []
 
     def frame_orientation(self, tag):
         import sees.frame
@@ -218,7 +281,7 @@ class FrameModel:
 
         output = dict(nodes=nodes,
                       assembly=elems,
-                      coord=coord,
+#                     coord=coord,
                       sam=sam,
                       sections=sections,
                       ndm=ndm)

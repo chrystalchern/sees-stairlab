@@ -66,17 +66,19 @@ class PlotlyCanvas(Canvas):
         self.fig = fig
         return self
 
+    def to_html(self):
+        import plotly
+        #import plotly.offline
+        #plotly.offline.plot(data, include_plotlyjs=False, output_type='div')
+        return plotly.io.to_html(self.fig,
+                                 div_id=str(id(self)),
+                                 **self.config["save_options"]["html"])
+
     def write(self, filename=None, format=None):
         opts = self.config
         if "html" in filename:
-            import plotly
-            fig = self.fig
-            html = plotly.io.to_html(fig, div_id=str(id(self)), **opts["save_options"]["html"])
-            #import plotly.offline
-            #plotly.offline.plot(data, include_plotlyjs=False, output_type='div')
-
             with open(opts["write_file"],"w+") as f:
-                f.write(html)
+                f.write(self.to_html())
 
         elif "png" in filename:
             self.fig.write_image(filename, width=1920, height=1080)
@@ -98,9 +100,9 @@ class PlotlyCanvas(Canvas):
         }
 
 
-    def plot_nodes(self, coords, label = None, props=None, data=None):
+    def plot_nodes(self, coords, label = None, props=None, data=None, scale=1):
         name = label or "nodes"
-        x,y,z = coords.T
+        x,y,z = scale*coords.T
         keys  = ["tag","crd"]
 
         trace = {

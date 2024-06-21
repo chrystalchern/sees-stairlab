@@ -37,12 +37,12 @@ class GltfLibCanvas(Canvas):
     def __init__(self, config=None):
         self.config = config
 
-        # Quaternion, equivalent to rotation matrix:
-        #  1  0  0
-        #  0  0  1
-        #  0 -1  0
         #                          x, y, z, scalar
         self._rotation = [-0.7071068, 0, 0, 0.7071068]
+        # equivalent rotation matrix:
+        self._rotation_matrix = np.array([[1,  0, 0],
+                                          [0,  0, 1],
+                                          [0, -1, 0]])
 
         self.index_t = "uint16"
         self.float_t = "float32"
@@ -108,18 +108,17 @@ class GltfLibCanvas(Canvas):
         )
         self.gltf._glb_data = bytes()
 
-        self._init_nodes()
 
         # Map pairs of (color, alpha) to material's index in material list
         self._color = {(m.name,m.pbrMetallicRoughness.baseColorFactor[3]): i
                        for i,m in enumerate(self.gltf.materials)}
 
-    def _init_nodes(self):
+    def _init_nodes(self, scale=1):
         #
         #
         #
         index_t = "uint8"
-        points = np.array(
+        points = scale*np.array(
             [
                 [-1.0, -1.0,  1.0],
                 [ 1.0, -1.0,  1.0],
@@ -220,9 +219,11 @@ class GltfLibCanvas(Canvas):
 #               "showlegend": False
 #           })
 
-    def plot_nodes(self, coords, label = None, props=None, data=None, **kwds):
+    def plot_nodes(self, coords, label = None, props=None, data=None, scale=1.0, **kwds):
         name = label or "nodes"
         x,y,z = coords.T
+        if not hasattr(self, "_node_mesh"):
+            self._init_nodes(scale=scale)
 
 #       indices_access, points_access = self._node_access
 
@@ -234,7 +235,7 @@ class GltfLibCanvas(Canvas):
             self.gltf.nodes.append(pygltflib.Node(
                     mesh=self._node_mesh,
                     #rotation=self._rotation,
-                    translation=coord.tolist(),
+                    translation=(self._rotation_matrix@coord).tolist(),
                 )
             )
             self.gltf.scenes[0].nodes.append(len(self.gltf.nodes)-1)
@@ -407,18 +408,25 @@ class GltfLibCanvas(Canvas):
         self.gltf.scenes[0].nodes.append(len(self.gltf.nodes)-1)
 
 
-    def show(self):
-        import bottle
-        page = self._form_html("./model.glb")
+    def to_glb(self)->bytes:
+        return b"".join(self.gltf.save_to_bytes())
 
-        glb = b"".join(self.gltf.save_to_bytes())
-        app = bottle.Bottle()
-        app.route("/")(lambda : page )
-        app.route("/model.glb")(lambda : glb)
-        try:
-            bottle.run(app, host="localhost", port=9090)
-        except KeyboardInterrupt:
-            pass
+#   def show(self):
+#       import sees.server
+#       page = self._form_html("./model.glb")
+
+#       glb = b"".join(self.gltf.save_to_bytes())
+#       sees.server.Server(glb, 
+
+#       app = bottle.Bottle()
+#       app.route("/")(lambda : page )
+#       app.route("/model.glb")(lambda : glb)
+
+#       try:
+#           bottle.run(app, host="localhost", port=9090)
+#       except KeyboardInterrupt:
+#           pass
+
 
 
     def _form_html_(self, src):

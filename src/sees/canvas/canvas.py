@@ -1,17 +1,21 @@
 # Claudio Perez
 import numpy as np
+import warnings
+
 class Canvas:
     def build(self): ...
-
-    def show(self):
-        raise NotImplementedError
 
     def write(self, filename=None):
         raise NotImplementedError
 
-    def plot_nodes(self, coords, label = None, props=None, data=None): ...
+    def plot_nodes(self, coords, label = None, props=None, data=None):
+        warnings.warn("plot_lines not implemented for chosen canvas")
 
-    def plot_lines(self, coords, label=None, props=None, color=None, width=None): ...
+    def plot_lines(self, coords, label=None, props=None, color=None, width=None):
+        warnings.warn("plot_lines not implemented for chosen canvas")
+
+    def plot_mesh(self,vertices, triangles, **kwds):
+        warnings.warn("plot_mesh not implemented for chosen canvas")
 
     def plot_vectors(self, locs, vecs, label=None, **kwds):
         ne = vecs.shape[0]
@@ -22,5 +26,4 @@ class Canvas:
                 X[i*3+1,:] = locs[i] + vecs[i]
             self.plot_lines(X, color=("red", "blue", "green")[j], label=label)
 
-    def plot_mesh(self,vertices, triangles, **kwds): ...
 

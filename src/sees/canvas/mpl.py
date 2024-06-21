@@ -20,7 +20,7 @@ class MatplotlibCanvas(Canvas):
 
         self.ax = ax
 
-    def show(self):
+    def popup(self):
         self.plt.show()
 
     def build(self):
