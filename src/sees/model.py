@@ -6,6 +6,23 @@ try:
 except ImportError:
     import json
 
+OUTLINES = {
+            None:      None,
+            "square":  np.array([[-1., -1.],
+                                 [ 1., -1.],
+                                 [ 1.,  1.],
+                                 [-1.,  1.]])/10,
+
+            "tee":     np.array([[ 6.0,  0.0],
+                                 [ 6.0,  4.0],
+                                 [-6.0,  4.0],
+                                 [-6.0,  0.0],
+                                 [-2.0,  0.0],
+                                 [-2.0, -8.0],
+                                 [ 2.0, -8.0],
+                                 [ 2.0,  0.0]])/10
+        }
+
 
 
 def read_model(filename:str, shift=None)->dict:
@@ -65,78 +82,82 @@ class Model:
 class SolidModel:
     pass
 
-OUTLINES = {
-            None:      None,
-            "square":  np.array([[-1., -1.],
-                                 [ 1., -1.],
-                                 [ 1.,  1.],
-                                 [-1.,  1.]])/10,
+class FrameModel:
+    def __init__(self, sam:dict, shift = None, rot=None, **kwds):
+        """
+        Process OpenSees JSON output and return dict with the form:
 
-            "tee":     np.array([[ 6.0,  0.0],
-                                 [ 6.0,  4.0],
-                                 [-6.0,  4.0],
-                                 [-6.0,  0.0],
-                                 [-2.0,  0.0],
-                                 [-2.0, -8.0],
-                                 [ 2.0, -8.0],
-                                 [ 2.0,  0.0]])/10
+            {<elem tag>: {"crd": [<coordinates>], ...}}
+        """
+
+        self._frame_outlines = None
+        self._extrude_default = OUTLINES[kwds.get("extrude_default", "square")]
+        self._extrude_outline = OUTLINES[kwds.get("extrude_outline", None)]
+
+        ndm = 3
+        R = np.eye(ndm) if rot is None else rot
+
+        if shift is None:
+            shift = np.zeros(ndm)
+        else:
+            shift = np.asarray(shift)
+
+        # Process OpenSees JSON format
+        try:
+            sam = sam["StructuralAnalysisModel"]
+        except KeyError:
+            pass
+
+        geom = sam.get("geometry", sam.get("assembly"))
+
+        try:
+            #coord = np.array([R@n.pop("crd") for n in geom["nodes"]], dtype=float) + shift
+            coord = np.array([R@n["crd"] for n in geom["nodes"]], dtype=float) + shift
+        except:
+            coord = np.array([R@[*n["crd"], 0.0] for n in geom["nodes"]], dtype=float) + shift
+
+        nodes = {
+                n["name"]: {**n, "crd": coord[i], "idx": i}
+                    for i,n in enumerate(geom["nodes"])
         }
 
-def _add_section_shape(section, sections=None, outlines=None):
-    from scipy.spatial import ConvexHull
-
-    # Rotation to change coordinates from x-y to z-y
-    R = np.array(((0,-1),
-                  (1, 0))).T
-
-    if "section" in section:
-        # Treat aggregated sections
-        if section["section"] not in outlines:
-            outlines[section["name"]] = _add_section_shape(sections[section["section"]], sections, outlines)
-        else:
-            outlines[section["name"]] = outlines[section["section"]]
-
-    elif "bounding_polygon" in section:
-        outlines[section["name"]] = [R@s for s in section["bounding_polygon"]]
-
-    elif "fibers" in section:
-        #outlines[section["name"]] = _alpha_shape(np.array([f["coord"] for f in section["fibers"]]))
-        points = np.array([f["coord"] for f in section["fibers"]])
-        outlines[section["name"]] = points[ConvexHull(points).vertices]
+        ndm = len(next(iter(nodes.values()))["crd"])
 
 
-def _get_frame_outlines(model):
-    sections = {}
-    for name,section in model["sections"].items():
-        _add_section_shape(section, model["sections"], sections)
+        try:
+            trsfm = {int(t["name"]): t for t in sam["properties"]["crdTransformations"]}
+        except KeyError:
+            trsfm = {}
 
-    outlines = {
-        # TODO: For now, only using the first of the element's cross
-        #       sections
-        elem["name"]: np.array(sections[elem["sections"][0]])
+        elems =  {
+          e["name"]: dict(
+            **e,
+            crd=np.array([nodes[n]["crd"] for n in e["nodes"]], dtype=float),
+            trsfm=trsfm[int(e["crdTransformation"])]
+                if "crdTransformation" in e and int(e["crdTransformation"]) in trsfm
+                else dict(yvec=R@e["yvec"] if "yvec" in e else None)
+          ) for e in geom["elements"]
+        }
 
-        for elem in model["assembly"].values()
-            if "sections" in elem and elem["sections"][0] in sections
-    }
+        try:
+            sections = {s["name"]: s for s in sam["properties"]["sections"]}
+        except:
+            sections = {}
 
-    return outlines
+        output = dict(nodes=nodes,
+                      assembly=elems,
+                      sam=sam,
+                      sections=sections,
+                      ndm=ndm)
 
-class FrameModel:
-#   nodes
-#   cells
-#   elements
-#   sections
-#   prototypes
+        if "prototypes" in sam:
+            output.update({"prototypes": sam["prototypes"]})
+        #
+
+        self._data = output
 
     def __getitem__(self, key):
         return self._data[key]
-
-#   @property
-#   def nodes(self):
-#       return {k: n["crd"] for k, n in self["nodes"].items()}
-#   @property
-#   def cells(self):
-#       return {k: e["nodes"] for k, e in self["assembly"].items()}
 
     def cell_nodes(self, tag=None):
         if tag is None:
@@ -244,75 +265,42 @@ class FrameModel:
             return self._extrude_default
 
 
-    def __init__(self, sam:dict, shift = None, rot=None, **kwds):
+def _add_section_shape(section, sections=None, outlines=None):
+    from scipy.spatial import ConvexHull
 
-        """
-        Process OpenSees JSON output and return dict with the form:
+    # Rotation to change coordinates from x-y to z-y
+    R = np.array(((0,-1),
+                  (1, 0))).T
 
-            {<elem tag>: {"crd": [<coordinates>], ...}}
-        """
-        try:
-            sam = sam["StructuralAnalysisModel"]
-        except KeyError:
-            pass
-
-        self._frame_outlines = None
-        self._extrude_default = OUTLINES[kwds.get("extrude_default", "square")]
-        self._extrude_outline = OUTLINES[kwds.get("extrude_outline", None)]
-
-        ndm = 3
-        R = np.eye(ndm) if rot is None else rot
-
-        geom = sam.get("geometry", sam.get("assembly"))
-
-        if shift is None:
-            shift = np.zeros(ndm)
+    if "section" in section:
+        # Treat aggregated sections
+        if section["section"] not in outlines:
+            outlines[section["name"]] = _add_section_shape(sections[section["section"]], sections, outlines)
         else:
-            shift = np.asarray(shift)
+            outlines[section["name"]] = outlines[section["section"]]
 
-        try:
-            #coord = np.array([R@n.pop("crd") for n in geom["nodes"]], dtype=float) + shift
-            coord = np.array([R@n["crd"] for n in geom["nodes"]], dtype=float) + shift
-        except:
-            coord = np.array([R@[*n["crd"], 0.0] for n in geom["nodes"]], dtype=float) + shift
+    elif "bounding_polygon" in section:
+        outlines[section["name"]] = [R@s for s in section["bounding_polygon"]]
 
-        nodes = {
-                n["name"]: {**n, "crd": coord[i], "idx": i}
-                    for i,n in enumerate(geom["nodes"])
-        }
-
-        ndm = len(next(iter(nodes.values()))["crd"])
+    elif "fibers" in section:
+        #outlines[section["name"]] = _alpha_shape(np.array([f["coord"] for f in section["fibers"]]))
+        points = np.array([f["coord"] for f in section["fibers"]])
+        outlines[section["name"]] = points[ConvexHull(points).vertices]
 
 
-        try:
-            trsfm = {int(t["name"]): t for t in sam["properties"]["crdTransformations"]}
-        except KeyError:
-            trsfm = {}
+def _get_frame_outlines(model):
+    sections = {}
+    for name,section in model["sections"].items():
+        _add_section_shape(section, model["sections"], sections)
 
-        elems =  {
-          e["name"]: dict(
-            **e,
-            crd=np.array([nodes[n]["crd"] for n in e["nodes"]], dtype=float),
-            trsfm=trsfm[int(e["crdTransformation"])]
-                if "crdTransformation" in e and int(e["crdTransformation"]) in trsfm
-                else dict(yvec=R@e["yvec"] if "yvec" in e else None)
-          ) for e in geom["elements"]
-        }
+    outlines = {
+        # TODO: For now, only using the first of the element's cross
+        #       sections
+        elem["name"]: np.array(sections[elem["sections"][0]])
 
-        try:
-            sections = {s["name"]: s for s in sam["properties"]["sections"]}
-        except:
-            sections = {}
+        for elem in model["assembly"].values()
+            if "sections" in elem and elem["sections"][0] in sections
+    }
 
-        output = dict(nodes=nodes,
-                      assembly=elems,
-#                     coord=coord,
-                      sam=sam,
-                      sections=sections,
-                      ndm=ndm)
-
-        if "prototypes" in sam:
-            output.update({"prototypes": sam["prototypes"]})
-
-        self._data = output
+    return outlines
 
