@@ -6,18 +6,25 @@ from .viewer import Viewer
 
 class Server:
     def __init__(self, glb=None, html=None, viewer=None):
-        if html is None:
-            self._page = Viewer(src="./model.glb",
-                                viewer=viewer).get_html()
-        else:
-            self._page = html
-
         # Create App
         self._app = bottle.Bottle()
-        self._app.route("/")(lambda : self._page )
 
         if glb is not None:
-            self._app.route("/model.glb")(lambda : glb)
+            self._source = "glb"
+            html = Viewer(src="./model.glb",
+                          viewer=viewer).get_html()
+
+            # Create routes
+            self._app.route("/model.glb")(lambda : glb  )
+            self._app.route("/")(lambda          : html )
+
+        elif artist is not None:
+            self._source = "artist"
+
+        else:
+            self._source = "html"
+            # Create routes
+            self._app.route("/")(lambda : self.html )
 
     def run(self, port=None):
         if port is None:

@@ -129,7 +129,7 @@ class FrameModel:
             return self._cell_indices[tag]
         else:
             return self._cell_indices
-    
+
     def cell_properties(self, tag=None):
         if tag is not None:
             return self["assembly"][tag]

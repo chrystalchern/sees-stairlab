@@ -373,7 +373,10 @@ class FrameArtist:
 
     def draw_extrusions(self, state=None, rotations=None):
         from sees.frame import extrude 
-        return extrude.draw_extrusions(self, state=state, options=self.config)
+        return extrude.draw_extrusions(self.model, 
+                                       canvas=self.canvas, 
+                                       state=state,
+                                       options=self.config)
 
         sections = get_section_geometries(self.model, self.config)
 

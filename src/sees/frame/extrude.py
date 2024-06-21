@@ -10,7 +10,7 @@ from sees import RenderError
 from sees.model import read_model
 
 
-def draw_extrusions(artist, state=None, options=None):
+def draw_extrusions(model, canvas, state=None, options=None):
     #
     # |----------------o------------------------------
     # |        |      /|
@@ -22,13 +22,12 @@ def draw_extrusions(artist, state=None, options=None):
     #
     ndm = 3
 
-    model = artist.model
 
     coords = []
     triang = []
 
     I = 0
-    for i,el in enumerate(artist.model["assembly"].values()):
+    for i,el in enumerate(model["assembly"].values()):
         # TODO: probably better to loop over sections dict rather
         #       than elements
         outline = model.frame_outline(el["name"])
@@ -48,25 +47,25 @@ def draw_extrusions(artist, state=None, options=None):
             outline = outline*0.98
             X = np.array(el["crd"])
 #           R = [sees.frame.orientation(el["crd"], el["trsfm"]["yvec"]).T]*N
-            R = [artist.model.frame_orientation(el["name"]).T]*N
+            R = [model.frame_orientation(el["name"]).T]*N
 
 
 
         # Loop over sample points along element length to assemble
         # `coord` and `triang` arrays
         for j in range(N):
-            # loop over section edges
+            # Loop over section edges
             for k,edge in enumerate(outline):
-                # append rotated section coordinates to list of coordinates
+                # Append rotated section coordinates to list of coordinates
                 coords.append(X[j, :] + R[j]@[0, *edge])
 
                 if j == 0:
-                    # skip the first section
+                    # Skip the first section
                     continue
 
                 elif k < noe-1:
                     triang.extend([
-                        # tie two triangles to this edge
+                        # Tie two triangles to this edge
                         [I+    noe*j + k,   I+    noe*j + k + 1,    I+noe*(j-1) + k],
                         [I+noe*j + k + 1,   I+noe*(j-1) + k + 1,    I+noe*(j-1) + k]
                     ])
@@ -81,7 +80,7 @@ def draw_extrusions(artist, state=None, options=None):
 
     triang = [list(reversed(i)) for i in triang]
 
-    artist.canvas.plot_mesh(coords, triang,
+    canvas.plot_mesh(coords, triang,
                               color   = "gray" , #if state is not None else "white",
                               opacity = None   if state is not None else 0.2
                              )
@@ -98,7 +97,7 @@ def draw_extrusions(artist, state=None, options=None):
 
     triang = [list(reversed(i)) for i in triang]
 
-    nan = np.zeros(artist.ndm)*np.nan
+    nan = np.zeros(ndm)*np.nan
     coords = np.array(coords)
     if "extrude.sections" in options["show_objects"]:
         tri_points = np.array([
@@ -110,7 +109,7 @@ def draw_extrusions(artist, state=None, options=None):
             for j,idx in enumerate(np.array(triang)) for i in idx[IDX[j%2]]
         ])
 
-    artist.canvas.plot_lines(tri_points,
+    canvas.plot_lines(tri_points,
                              color="black" if state is not None else "#808080",
                              width=4)
 
@@ -161,7 +160,7 @@ def _render(sam_file, res_file=None, noshow=False, **opts):
 
     artist = sees.FrameArtist(model, **config)
 
-    draw_extrusions(artist, options=opts)
+    draw_extrusions(artist.model, artist.canvas, options=opts)
 
     # -----------------------------------------------------------
 
@@ -170,10 +169,10 @@ def _render(sam_file, res_file=None, noshow=False, **opts):
         if "time" not in opts:
             soln = soln[soln.times[-1]]
 
-        draw_extrusions(artist, soln, opts)
+        draw_extrusions(artist.model, artist.canvas, soln, opts)
         # -----------------------------------------------------------
         _add_moment(artist,
-                    loc = [1.0, 0.0, 0.0],
+                    loc  = [1.0, 0.0, 0.0],
                     axis = [0, np.pi/2, 0])
         # -----------------------------------------------------------
 
