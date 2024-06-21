@@ -1,3 +1,4 @@
+# Claudio Perez
 import sys
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -19,12 +20,11 @@ def draw_extrusions(model, canvas, state=None, options=None):
     #          |/      |
     # |--------o-------o------------------------------
     #
-    #
     ndm = 3
 
-
-    coords = []
-    triang = []
+    coords = [] # Global mesh coordinates
+    triang = [] # Triangle indices into coords
+    locoor = [] # Local mesh coordinates, used for textures
 
     I = 0
     for i,el in enumerate(model["assembly"].values()):
@@ -36,28 +36,29 @@ def draw_extrusions(model, canvas, state=None, options=None):
 
         outline = outline*options["objects"]["sections"]["scale"]
 
-        N  = len(el["nodes"])
+        nen  = len(el["nodes"])
 
         noe = len(outline) # number of outline edges
         if state is not None:
             glob_displ = state.cell_array(el["name"], state.position)
-            X = shps.curve.displace(el["crd"], glob_displ, N).T
+            X = shps.curve.displace(el["crd"], glob_displ, nen).T
             R = state.cell_array(el["name"], state.rotation)
         else:
             outline = outline*0.98
             X = np.array(el["crd"])
 #           R = [sees.frame.orientation(el["crd"], el["trsfm"]["yvec"]).T]*N
-            R = [model.frame_orientation(el["name"]).T]*N
+            R = [model.frame_orientation(el["name"]).T]*nen
 
 
 
         # Loop over sample points along element length to assemble
         # `coord` and `triang` arrays
-        for j in range(N):
+        for j in range(nen):
             # Loop over section edges
             for k,edge in enumerate(outline):
                 # Append rotated section coordinates to list of coordinates
                 coords.append(X[j, :] + R[j]@[0, *edge])
+                locoor.append([(k+0)/(noe*1), (j+0)/nen])
 
                 if j == 0:
                     # Skip the first section
@@ -76,15 +77,14 @@ def draw_extrusions(model, canvas, state=None, options=None):
                         [      I + noe*j, I + noe*(j-1), I+noe*(j-1) + k]
                     ])
 
-        I += N*noe
+        I += nen*noe
 
     triang = [list(reversed(i)) for i in triang]
 
-    canvas.plot_mesh(coords, triang,
-                              color   = "gray" , #if state is not None else "white",
+    canvas.plot_mesh(coords, triang, locoor if state is None else None,
+                              color   = "gray" if state is not None else "metal",
                               opacity = None   if state is not None else 0.2
                              )
-
     show_edges = True
 
     if not show_edges:
@@ -189,7 +189,6 @@ if __name__ == "__main__":
         artist.draw()
 
         # write plot to file if output file name provided
-
         if config["write_file"]:
             artist.save(config["write_file"])
 

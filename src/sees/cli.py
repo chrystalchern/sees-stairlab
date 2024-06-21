@@ -7,7 +7,7 @@ import json
 from sees import config, RenderError
 
 
-__version__ = "0.0.4"
+__version__ = "0.0.9"
 
 NAME = "sees"
 
@@ -67,6 +67,15 @@ Options:
 
     fibers
 """
+
+
+AXES = dict(zip(("long","tran","vert",
+                 "sect","elev", "plan"), range(6)))
+
+def dof_index(dof: str):
+    try: return int(dof)
+    except: return AXES[dof]
+
 
 
 def parse_args(argv)->dict:
@@ -181,7 +190,7 @@ def parse_args(argv)->dict:
             elif arg == "--scale":
                 scale = next(args)
                 if "=" in scale:
-                    # looks like --scale <object>=<scale>
+                    # Used like --scale <object>=<scale>
                     k,v = scale.split("=")
                     opts["objects"][k]["scale"] = float(v)
                 else:

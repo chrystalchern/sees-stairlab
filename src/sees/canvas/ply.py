@@ -174,7 +174,7 @@ class PlotlyCanvas(Canvas):
             })
 
     def plot_mesh(self, vertices, triangles, color=None, opacity=None):
-        if color is None:
+        if color is None or color == "metal":
             color = "gray"
 
         x,y,z = zip(*vertices)

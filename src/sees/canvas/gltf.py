@@ -10,6 +10,7 @@
   For example, the quaternion [ 0.259, 0.0, 0.0, 0.966 ] describes a rotation
   about 30 degrees, around the x-axis.
 """
+import sees
 from pathlib import Path
 import numpy as np
 import pygltflib
@@ -102,6 +103,20 @@ class GltfLibCanvas(Canvas):
                         baseColorFactor=[0.9, 0.9, 0.9, 1]
                     )
                 ),
+                pygltflib.Material(
+                    name="metal",
+                    doubleSided=True,
+#                   alphaMode=pygltflib.MASK,
+                    occlusionTexture=pygltflib.OcclusionTextureInfo(index=1),
+#                   emissiveFactor=[0.8,0.8,0.8],
+                    pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
+                        metallicFactor=0.0,
+                        roughnessFactor=1.0,
+#                       baseColorFactor=[0.8, 0.8, 0.8, 1],
+                        baseColorTexture=pygltflib.TextureInfo(index=0),
+                        metallicRoughnessTexture=pygltflib.TextureInfo(index=1),
+                    )
+                ),
             ],
             bufferViews=[],
             buffers=[pygltflib.Buffer(byteLength=0)],
@@ -112,6 +127,19 @@ class GltfLibCanvas(Canvas):
         # Map pairs of (color, alpha) to material's index in material list
         self._color = {(m.name,m.pbrMetallicRoughness.baseColorFactor[3]): i
                        for i,m in enumerate(self.gltf.materials)}
+
+        #
+        # load assets for steel material
+        #
+#       for i,file in enumerate(("baseColor.png", "occlusionRoughnessMetallic.png")):
+        for i,file in enumerate(("rust.jpg", "occlusionRoughnessMetallic.png")):
+            path  = str(sees.assets/"metal"/file)
+            image = pygltflib.Image()
+            image.uri = path
+            self.gltf.images.append(image)
+            self.gltf.textures.append(pygltflib.Texture(source=i, name=path))
+
+        self.gltf.convert_images(pygltflib.ImageFormat.DATAURI)
 
     def _init_nodes(self, scale=1):
         #
@@ -359,7 +387,7 @@ class GltfLibCanvas(Canvas):
             self.gltf.scenes[0].nodes.append(len(self.gltf.nodes)-1)
 
 
-    def plot_mesh(self, vertices, triangles, lines=None, **kwds):
+    def plot_mesh(self, vertices, triangles, local_coords=None, lines=None, **kwds):
         points    = np.array(vertices, dtype=self.float_t)
         triangles = np.array(triangles,dtype=self.index_t)
 
@@ -385,6 +413,10 @@ class GltfLibCanvas(Canvas):
             )
         ])
 
+        index_access = len(self.gltf.accessors)-2
+        point_access = len(self.gltf.accessors)-1
+
+
         material = self._get_material(kwds.get("color", "gray"),
                                       kwds.get("alpha",      1))
 
@@ -393,13 +425,28 @@ class GltfLibCanvas(Canvas):
                  primitives=[
                      pygltflib.Primitive(
                          mode=pygltflib.TRIANGLES,
-                         attributes=pygltflib.Attributes(POSITION=len(self.gltf.accessors)-1),
+                         attributes=pygltflib.Attributes(POSITION=point_access),
                          material=material,
-                         indices=len(self.gltf.accessors)-2
+                         indices=index_access
                      )
                  ]
                )
         )
+        if local_coords is not None:
+            locoor = np.array(local_coords, dtype=self.float_t)
+            locoor_binary_blob = locoor.tobytes()
+            self.gltf.accessors.extend([
+                pygltflib.Accessor(
+                    bufferView=self._push_data(locoor_binary_blob, pygltflib.ARRAY_BUFFER),
+                    componentType=GLTF_T[self.float_t],
+                    count=len(locoor),
+                    type=pygltflib.VEC2,
+                    max=locoor.max(axis=0).tolist(),
+                    min=locoor.min(axis=0).tolist(),
+                )
+            ])
+            self.gltf.meshes[-1].primitives[0].attributes.TEXCOORD_0 = len(self.gltf.accessors) -1
+
         self.gltf.nodes.append(pygltflib.Node(
                 mesh=len(self.gltf.meshes)-1,
                 rotation=self._rotation
