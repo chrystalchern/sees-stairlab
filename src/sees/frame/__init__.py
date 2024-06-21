@@ -9,10 +9,10 @@ import numpy as np
 Array = np.ndarray
 from scipy.linalg import block_diag
 
-from sees.state import read_state, State
+from sees.model  import FrameModel
+from sees.state  import read_state, State
 from sees.config import Config, apply_config
 
-from sees.model import FrameModel
 
 # Data shaping / Misc.
 #----------------------------------------------------
@@ -69,7 +69,7 @@ def get_section_geometries(model, config=None):
 # The following functions implement various kinematic
 # relations for standard frame models.
 
-def elastic_curve(x: Array, v: Array, L:float)->Array:
+def elastic_curve(x: Array, v: list, L:float)->Array:
     "compute points along Euler's elastica"
     if len(v) == 2:
         ui, uj, (vi, vj) = 0.0, 0.0, v
@@ -83,7 +83,7 @@ def elastic_curve(x: Array, v: Array, L:float)->Array:
     y = ui*N1 + vi*N2 + uj*N3 + vj*N4
     return y.flatten()
 
-def elastic_tangent(x: Array, v: Array, L: float)->Array:
+def elastic_tangent(x: Array, v: list, L: float)->Array:
     if len(v) == 2:
         ui, uj, (vi, vj) = 0.0, 0.0, v
     else:
@@ -94,20 +94,6 @@ def elastic_tangent(x: Array, v: Array, L: float)->Array:
     M5 = 1 - 4*xi+3*xi**2
     M6 = -2*xi + 3*xi**2
     return (ui*M3 + vi*M5 + uj*M4 + vj*M6).flatten()
-
-def orientation(xyz, yvec=None):
-    """Create a rotation matrix between local E and global e basis
-    """
-    dx = xyz[-1] - xyz[0]
-    L = np.linalg.norm(dx)
-    e1 = dx/L
-    e2 = np.array(yvec)
-    v3 = np.cross(e1,e2)
-    norm_v3 = np.linalg.norm(v3)
-
-    e3 = v3 / norm_v3
-    R = np.stack([e1,e2,e3])
-    return R
 
 
 def rotation(xyz: Array, vert=None)->Array:
@@ -135,7 +121,7 @@ def displaced_profile(
         vect : Array = None, #: Element orientation vector
         npoints: int = 10,
         tangent: bool = False
-    )->Array:
+    ):
     n = npoints
     #           (------ndm------)
     reps = 4 if len(coord[0])==3 else 2
@@ -227,7 +213,8 @@ class FrameArtist:
 
         self._plot_rotation = R
 
-        self.model = FrameModel(model_data, shift=loc, rot=R, **kwds.get("model_config", {}))
+        self.model = FrameModel(model_data, shift=loc, rot=R,
+                                **kwds.get("model_config", {}))
 
         # Create permutation matrix
         if ndf == 3:
@@ -244,8 +231,7 @@ class FrameArtist:
 
         self.dofs2plot = block_diag(*[R]*2)@P
 
-        self.displ_states = {} # defaultdict(lambda : np.zeros((len(self.model["nodes"]), 6)))
-
+        self.displ_states = {}
 
     def add_point_displacements(self, displ, scale=1.0, name=None):
         displ_array = self.displ_states[name]
@@ -276,9 +262,8 @@ class FrameArtist:
         else:
             state = res_file
 
-        # Test type of first item in dict; if dict of dicts,
-        # its a collection of responses, otherwise, just a
-        # single response
+        # If dict, assume its a collection of responses, 
+        # otherwise, just a single response
         if isinstance(state, dict):
             for k, v in state.items():
                 self._add_displ_case(v, name=k, scale=scale)
@@ -292,16 +277,16 @@ class FrameArtist:
         uvw = self._plot_rotation.T*kwds.get("scale", 1.0)
         off = [[0, -kwds.get("scale", 1.0)/2, 0],
                [0]*3,
-               [0]*3] #kwds.get("scale", 1.0)/10
-#       uvw = np.eye(3)*kwds.get("scale", 1.0)
+               [0]*3]
+
         self.canvas.plot_vectors(xyz, uvw, **kwds)
-        if hasattr(self.canvas, "annotate"):
-            for i,label in enumerate(kwds.get("label", [])):
-                self.canvas.annotate(label, (xyz+uvw)[i]+off[i])
+
+        for i,label in enumerate(kwds.get("label", [])):
+            self.canvas.annotate(label, (xyz+uvw)[i]+off[i])
 
     def add_elem_data(self):
-        N = 3
-        exclude_keys = {"type", "instances", "nodes", "crd", "crdTransformation"}
+        exclude_keys = {"type", "instances", "nodes", 
+                        "crd", "crdTransformation"}
 
         if "prototypes" not in self.model:
             elem_types = defaultdict(lambda: defaultdict(list))
@@ -329,6 +314,7 @@ class FrameArtist:
                 } for elem in self.model["prototypes"]["elements"]
             }
 
+        N = 3
         for name, elem in elem_types.items():
             coords = np.zeros((len(elem["elems"])*(N+1),self.ndm))
             coords.fill(np.nan)
@@ -342,6 +328,8 @@ class FrameArtist:
             keys  = elem["keys"]
             data  = np.array(elem["data"])
 
+            alpha = 0.6 if "zerolength" in name.lower() and "zerolength" in self.config["show_objects"] else 0
+
             # TODO: Make this nicer
             self.canvas.data.append({
                 "name": name,
@@ -349,12 +337,12 @@ class FrameArtist:
                 "type": "scatter3d", "mode": "markers", # "lines", #
                 "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
                 "customdata": data,
-                "opacity": 0.6 if "zerolength" in name.lower() and "zerolength" in self.config["show_objects"] else 0
+                "opacity": alpha
                 #"marker": {"opacity": 0.0,"size": 0.0, "line": {"width": 0.0}}
             })
 
 
-    def plot_chords(self, assembly, state=None, layer=None):
+    def plot_chords(self, state=None, layer=None):
         model = self.model
         ndm   = self.model["ndm"]
 
@@ -383,8 +371,9 @@ class FrameArtist:
             self.canvas.plot_mesh(nodes, np.array(triangles))
 
 
-    def plot_extruded_frames(self, state=None, rotations=None):
-        from scipy.spatial.transform import Rotation
+    def draw_extrusions(self, state=None, rotations=None):
+        from sees.frame import extrude 
+        return extrude.draw_extrusions(self, state=state, options=self.config)
 
         sections = get_section_geometries(self.model, self.config)
 
@@ -409,76 +398,6 @@ class FrameArtist:
                                      [ 48,  48],
                                      [-48,  48]])
 
-            ne = len(sect)
-            R  = rotation(el["crd"], None)
-            if state is not None:
-                glob_displ = state.cell_array(tag).flatten()
-                vect = None #np.array(el["trsfm"]["vecInLocXZPlane"])[axes]
-                X,r = displaced_profile(el["crd"], glob_displ, vect=vect, npoints=N, tangent=True)
-                X = X.T
-
-                R = [Rotation.from_euler("xzy",v).as_matrix()@R for v in r.T]
-
-            else:
-                X  = np.linspace(el["crd"][0], el["crd"][-1], N)
-                R = [R]*N
-
-            for j in range(N):
-                for k,edge in enumerate(sect):
-                    coords.append(X[j  , :] + R[j].T@[0, *edge])
-                    if j == 0:
-                        continue
-
-                    elif k < ne-1:
-                        triang.extend([
-                            [I+    ne*j + k, I+    ne*j + k + 1, I+ne*(j-1) + k],
-                            [I+ne*j + k + 1, I+ne*(j-1) + k + 1, I+ne*(j-1) + k]
-                        ])
-                    else:
-                        # elif j < N-1:
-                        triang.extend([
-                            [I+    ne*j + k,    I + ne*j , I+ne*(j-1) + k],
-                            [      I + ne*j, I + ne*(j-1), I+ne*(j-1) + k]
-                        ])
-
-            I += N*ne
-
-        x,y,z = zip(*coords)
-        i,j,k = zip(*triang)
-        self.canvas.data.append({
-            #"name": label if label is not None else "",
-            "type": "mesh3d",
-            "x": x, "y": y, "z": z, "i": i, "j": j, "k": k,
-            "hoverinfo":"skip",
-            "lighting": dict(ambient=0.9), #roughness=0.5, specular=0.2),
-            "opacity": 1.0,
-            "color": "gray",
-            # "color": "white",
-            # "opacity": 0.2
-        })
-
-        show_edges = True
-        if show_edges:
-            IDX = np.array((
-                (0, 2),
-                (0, 1)
-            ))
-            nan = np.zeros(3)*np.nan
-            coords = np.array(coords)
-            tri_points = np.array([
-                coords[idx]  if (j+1)%3 else nan for j,idx in enumerate(np.array(triang).reshape(-1))
-                # coords[i]  if j%2 else nan for j,idx in enumerate(np.array(triang)) for i in idx[IDX[j%2]]
-            ])
-            Xe, Ye, Ze = tri_points.T
-            self.canvas.data.append({
-                "type": "scatter3d",
-                "mode": "lines",
-                "x": Xe, "y": Ye, "z": Ze,
-                "hoverinfo":"skip",
-                "opacity": 1.0,
-                "line": { "color": "black", "width": 5}
-            })
-
 
 
     def plot_displaced_assembly(self, assembly, state=None, label=None):
@@ -500,9 +419,7 @@ class FrameArtist:
         self.canvas.plot_lines(coords[:, :self.ndm], color="red", label=label)
 
     def plot_nodes(self, state=None, data=None):
-        coord = self.model.node_position(state=state) #self.model["coord"]
-#       if state is not None:
-#           coord = coord + state.node_array()[:, :3] #self.ndm]
+        coord = self.model.node_position(state=state)
         self.canvas.plot_nodes(coord[:,:self.ndm],
                                data=data,
                                scale=self.config["objects"]["nodes"]["scale"])
@@ -512,7 +429,7 @@ class FrameArtist:
         xyz, uvw = np.nan*np.zeros((2, ne, 3, 3))
 
         for i,el in enumerate(self.model["assembly"].values()):
-            axes = self.model.frame_orientation(el["name"]) #el["crd"], el["trsfm"]["yvec"])
+            axes = self.model.frame_orientation(el["name"])
             if axes is None:
                 continue
 
@@ -521,47 +438,19 @@ class FrameArtist:
             xyz[i,:,:] = np.array([coord]*3)
             uvw[i,:,:] = scale*axes
 
-#           self.canvas.plot_vectors(np.array([coord]*3), scale*rotation(el["crd"], el["trsfm"]["yvec"]))
         self.canvas.plot_vectors(xyz.reshape(ne*3,3), uvw.reshape(ne*3,3))
-
-#   def add_elem_data(self):
-#       N = 3
-#       coords = np.zeros((len(self.model["assembly"])*(N+1),self.ndm))
-#       coords.fill(np.nan)
-#       for i,el in enumerate(self.model["assembly"].values()):
-#           coords[(N+1)*i:(N+1)*i+N,:] = np.linspace(*el["crd"], N)
-
-#       coords = coords.reshape(-1,4,3)[:,-3]
-
-#       x,y,z = coords.T
-#       keys  = ["tag",]
-#       frames = np.array(list(self.model["assembly"].keys()),dtype=FLOAT)[:,None]
-#       try:
-#           # TODO: Make this nicer
-#           self.canvas.data.append({
-#                   "name": "frames",
-#                   "x": x, "y": y, "z": z,
-#                   "type": "scatter3d","mode": "markers",
-#                   "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
-#                   "customdata": frames,
-#                   "opacity": 0
-#                   #"marker": {"opacity": 0.0,"size": 0.0, "line": {"width": 0.0}}
-#           })
-#       except:
-#           pass
-
 
     def draw(self):
         if "frames" in self.config["show_objects"]:
-            self.plot_chords(self.model["assembly"])
+            self.plot_chords()
             try:
                 self.add_elem_data()
             except:
                 pass
 
         if "nodes" in self.config["show_objects"]:
-#           self.plot_nodes(data=list(np.array(list(self.model["nodes"].keys()),dtype=str)[:,None]))
-            self.plot_nodes(data=[[str(k), list(map(str, n["crd"]))] for k,n in self.model["nodes"].items()])
+            self.plot_nodes(data=[[str(k), list(map(str, n["crd"]))] 
+                                  for k,n in self.model["nodes"].items()])
 
         if "origin" in self.config["show_objects"]:
             self.plot_origin(**self.config["objects"]["origin"])
@@ -571,23 +460,25 @@ class FrameArtist:
 
         for layer, state in self.displ_states.items():
             if "chords" in self.config["show_objects"]:
-                self.plot_chords(self.model["assembly"], state=state, layer=layer)
+                self.plot_chords(state=state, layer=layer)
+    
             self.plot_displaced_assembly(self.model["assembly"], state=state, label=layer)
 
         if "extrude" in self.config["show_objects"]:
             displ = None
             if len(self.displ_states) == 1:
                 displ = next(iter(self.displ_states.values()))
+
             try:
-                self.plot_extruded_frames(displ)
+                self.draw_extrusions(displ)
             except Exception as e:
-                raise e
+                # raise e
                 print("Warning -- ", e, file=sys.stderr)
 
         self.canvas.build()
         return self
 
-    def write(self, filename):
+    def save(self, filename):
         self.canvas.write(filename)
 
     def repl(self):
@@ -604,7 +495,7 @@ class FrameArtist:
 
         def plot(*args):
             if len(args) == 0:
-                return self.plot()
+                return self.draw()
 
             elif hasattr(self, "plot_"+args[0]):
                 return getattr(self, "plot_"+args[0])(*args[1:])
@@ -615,5 +506,3 @@ class FrameArtist:
         repl.interp._interp.createcommand("plot", plot)
         # repl.interp._interp.createcommand("show", lambda *args: self.canvas.show())
         repl.repl()
-
-

@@ -119,9 +119,8 @@ def main():
         artist.draw()
 
         # write plot to file if output file name provided
-
         if config["write_file"]:
-            artist.write(config["write_file"])
+            artist.save(config["write_file"])
             return
 
         # Otherwise either create popup, or start server

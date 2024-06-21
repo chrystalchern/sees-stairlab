@@ -8,6 +8,8 @@ class Canvas:
     def write(self, filename=None):
         raise NotImplementedError
 
+    def annotate(self, *args, **kwds): ...
+
     def plot_nodes(self, coords, label = None, props=None, data=None):
         warnings.warn("plot_lines not implemented for chosen canvas")
 

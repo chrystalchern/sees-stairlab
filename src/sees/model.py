@@ -6,7 +6,9 @@ try:
 except ImportError:
     import json
 
-OUTLINES = {
+_EYE3 = np.eye(3)
+
+_OUTLINES = {
             None:      None,
             "square":  np.array([[-1., -1.],
                                  [ 1., -1.],
@@ -91,8 +93,8 @@ class FrameModel:
         """
 
         self._frame_outlines = None
-        self._extrude_default = OUTLINES[kwds.get("extrude_default", "square")]
-        self._extrude_outline = OUTLINES[kwds.get("extrude_outline", None)]
+        self._extrude_default = _OUTLINES[kwds.get("extrude_default", "square")]
+        self._extrude_outline = _OUTLINES[kwds.get("extrude_outline", None)]
 
         ndm = 3
         R = np.eye(ndm) if rot is None else rot
@@ -102,59 +104,8 @@ class FrameModel:
         else:
             shift = np.asarray(shift)
 
-        # Process OpenSees JSON format
-        try:
-            sam = sam["StructuralAnalysisModel"]
-        except KeyError:
-            pass
-
-        geom = sam.get("geometry", sam.get("assembly"))
-
-        try:
-            #coord = np.array([R@n.pop("crd") for n in geom["nodes"]], dtype=float) + shift
-            coord = np.array([R@n["crd"] for n in geom["nodes"]], dtype=float) + shift
-        except:
-            coord = np.array([R@[*n["crd"], 0.0] for n in geom["nodes"]], dtype=float) + shift
-
-        nodes = {
-                n["name"]: {**n, "crd": coord[i], "idx": i}
-                    for i,n in enumerate(geom["nodes"])
-        }
-
-        ndm = len(next(iter(nodes.values()))["crd"])
-
-
-        try:
-            trsfm = {int(t["name"]): t for t in sam["properties"]["crdTransformations"]}
-        except KeyError:
-            trsfm = {}
-
-        elems =  {
-          e["name"]: dict(
-            **e,
-            crd=np.array([nodes[n]["crd"] for n in e["nodes"]], dtype=float),
-            trsfm=trsfm[int(e["crdTransformation"])]
-                if "crdTransformation" in e and int(e["crdTransformation"]) in trsfm
-                else dict(yvec=R@e["yvec"] if "yvec" in e else None)
-          ) for e in geom["elements"]
-        }
-
-        try:
-            sections = {s["name"]: s for s in sam["properties"]["sections"]}
-        except:
-            sections = {}
-
-        output = dict(nodes=nodes,
-                      assembly=elems,
-                      sam=sam,
-                      sections=sections,
-                      ndm=ndm)
-
-        if "prototypes" in sam:
-            output.update({"prototypes": sam["prototypes"]})
         #
-
-        self._data = output
+        self._data = _from_opensees(sam, shift, R)# output
 
     def __getitem__(self, key):
         return self._data[key]
@@ -167,7 +118,6 @@ class FrameModel:
         else:
             return self["assembly"][tag]["nodes"]
 
-
     def cell_indices(self, tag=None):
         if not hasattr(self, "_cell_indices"):
             self._cell_indices = {
@@ -179,10 +129,20 @@ class FrameModel:
             return self._cell_indices[tag]
         else:
             return self._cell_indices
+    
+    def cell_properties(self, tag=None):
+        if tag is not None:
+            return self["assembly"][tag]
+
+    def cell_prototypes(self)->"iter":
+        pass
 
     def iter_node_tags(self):
         for tag in self["nodes"]:
             yield tag
+    
+    def node_properties(self, tag=None)->dict:
+        return self["nodes"][tag]
 
     def node_indices(self, tag=None):
         if not hasattr(self, "_node_indices"):
@@ -223,7 +183,6 @@ class FrameModel:
         return []
 
     def frame_orientation(self, tag):
-        import sees.frame
         el = self["assembly"][tag]
 
         xyz = el["crd"]
@@ -251,7 +210,7 @@ class FrameModel:
             return np.stack([e1,e2,e3])
         else:
             print(el)
-
+            return _EYE3
 
     def frame_outline(self, tag):
         if self._frame_outlines is None:
@@ -263,6 +222,60 @@ class FrameModel:
             return self._frame_outlines[tag]
         else:
             return self._extrude_default
+
+
+def _from_opensees(sam, shift, R):
+    # Process OpenSees JSON format
+    try:
+        sam = sam["StructuralAnalysisModel"]
+    except KeyError:
+        pass
+
+    geom = sam.get("geometry", sam.get("assembly"))
+
+    try:
+        #coord = np.array([R@n.pop("crd") for n in geom["nodes"]], dtype=float) + shift
+        coord = np.array([R@n["crd"] for n in geom["nodes"]], dtype=float) + shift
+    except:
+        coord = np.array([R@[*n["crd"], 0.0] for n in geom["nodes"]], dtype=float) + shift
+
+    nodes = {
+        n["name"]: {**n, "crd": coord[i], "idx": i}
+            for i,n in enumerate(geom["nodes"])
+    }
+
+    ndm = len(next(iter(nodes.values()))["crd"])
+
+    try:
+        trsfm = {int(t["name"]): t for t in sam["properties"]["crdTransformations"]}
+    except KeyError:
+        trsfm = {}
+
+    elems =  {
+        e["name"]: dict(
+        **e,
+        crd=np.array([nodes[n]["crd"] for n in e["nodes"]], dtype=float),
+        trsfm=trsfm[int(e["crdTransformation"])]
+            if "crdTransformation" in e and int(e["crdTransformation"]) in trsfm
+            else dict(yvec=R@e["yvec"] if "yvec" in e else None)
+        ) for e in geom["elements"]
+    }
+
+    try:
+        sections = {s["name"]: s for s in sam["properties"]["sections"]}
+    except:
+        sections = {}
+
+    output = dict(nodes=nodes,
+                    assembly=elems,
+                    sam=sam,
+                    sections=sections,
+                    ndm=ndm)
+
+    if "prototypes" in sam:
+        output.update({"prototypes": sam["prototypes"]})
+
+    return output
 
 
 def _add_section_shape(section, sections=None, outlines=None):

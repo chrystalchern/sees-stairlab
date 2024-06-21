@@ -10,6 +10,8 @@ class RenderError(Exception): pass
 def Canvas(subplots=None, backend=None):
     pass
 
+assets = Path(__file__).parents[0]/"assets/"
+
 def render(sam_file, res_file=None, noshow=False, ndf=6,
            artist = None, #: str|"Artist" = None,
            **opts):

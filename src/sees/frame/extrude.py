@@ -10,7 +10,7 @@ from sees import RenderError
 from sees.model import read_model
 
 
-def draw_extruded_frames(artist, state=None, options=None):
+def draw_extrusions(artist, state=None, options=None):
     #
     # |----------------o------------------------------
     # |        |      /|
@@ -23,8 +23,6 @@ def draw_extruded_frames(artist, state=None, options=None):
     ndm = 3
 
     model = artist.model
-
-    nodes = artist.model["nodes"]
 
     coords = []
     triang = []
@@ -121,11 +119,9 @@ class so3:
     def exp(cls, vect):
         return Rotation.from_rotvec(vect).as_matrix()
 
-def _add_moment(artist, loc=None, axis=None):
+def _add_moment(artist, loc, axis):
     import meshio
-    loc = [1.0, 0.0, 0.0]
-    axis = [0, np.pi/2, 0]
-    mesh_data = meshio.read('chrystals_moment.stl')
+    mesh_data = meshio.read(sees.assets/'chrystals_moment.stl')
     coords = mesh_data.points
 
     coords = np.einsum('ik, kj -> ij',  coords,
@@ -165,7 +161,7 @@ def _render(sam_file, res_file=None, noshow=False, **opts):
 
     artist = sees.FrameArtist(model, **config)
 
-    draw_extruded_frames(artist, options=opts)
+    draw_extrusions(artist, options=opts)
 
     # -----------------------------------------------------------
 
@@ -174,20 +170,12 @@ def _render(sam_file, res_file=None, noshow=False, **opts):
         if "time" not in opts:
             soln = soln[soln.times[-1]]
 
-        draw_extruded_frames(artist, soln, opts)
+        draw_extrusions(artist, soln, opts)
         # -----------------------------------------------------------
-        _add_moment(artist)
+        _add_moment(artist,
+                    loc = [1.0, 0.0, 0.0],
+                    axis = [0, np.pi/2, 0])
         # -----------------------------------------------------------
-
-#   # write plot to file if file name provided
-#   if config["write_file"]:
-#       artist.draw()
-#       artist.write(config["write_file"])
-
-#   else:
-#       artist.draw()
-#       if not noshow:
-#           artist.canvas.show()
 
     return artist
 
@@ -204,7 +192,7 @@ if __name__ == "__main__":
         # write plot to file if output file name provided
 
         if config["write_file"]:
-            artist.write(config["write_file"])
+            artist.save(config["write_file"])
 
 
         # Otherwise either create popup, or start server
