@@ -13,12 +13,14 @@ from sees.model import read_model
 
 def draw_extrusions(model, canvas, state=None, options=None):
     #
-    # |----------------o------------------------------
-    # |        |      /|
-    #          |    /  |
-    #          |  /    |
-    #          |/      |
-    # |--------o-------o------------------------------
+    #     x-------o---------o---------o
+    #   /       /         /
+    # x--------o<--------o---------o
+    # |        |       / ^
+    # |        |     /   |
+    # |        |   /     |
+    # |        | /       |
+    # x--------o-------->o---------o
     #
     ndm = 3
 
@@ -58,7 +60,9 @@ def draw_extrusions(model, canvas, state=None, options=None):
             for k,edge in enumerate(outline):
                 # Append rotated section coordinates to list of coordinates
                 coords.append(X[j, :] + R[j]@[0, *edge])
-                locoor.append([(k+0)/(noe*1), (j+0)/nen])
+                xl = [(j+0)/nen+0.1,  0.1+(k+0)/(noe+0)]
+                print(xl)
+                locoor.append(xl)
 
                 if j == 0:
                     # Skip the first section
@@ -82,9 +86,9 @@ def draw_extrusions(model, canvas, state=None, options=None):
     triang = [list(reversed(i)) for i in triang]
 
     canvas.plot_mesh(coords, triang, locoor if state is None else None,
-                              color   = "gray" if state is not None else "metal",
-                              opacity = None   if state is not None else 0.2
-                             )
+                           color   = "gray" if state is not None else "metal",
+                           opacity = None   if state is not None else 0.2
+    )
     show_edges = True
 
     if not show_edges:
