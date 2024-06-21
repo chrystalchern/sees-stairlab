@@ -2,8 +2,12 @@ import sys
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-import sees.frame
 import shps.curve
+
+import sees
+import sees.frame
+from sees import RenderError
+from sees.model import read_model
 
 
 def draw_extruded_frames(artist, state=None, options=None):
@@ -137,8 +141,6 @@ def _add_moment(artist, loc=None, axis=None):
     artist.canvas.plot_mesh(coords, triangles)
 
 
-import sees
-from sees import RenderError, read_model
 def _render(sam_file, res_file=None, noshow=False, **opts):
     # Configuration is determined by successively layering
     # from sources with the following priorities:

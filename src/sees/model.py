@@ -1,6 +1,31 @@
 # Claudio Perez
 import numpy as np
 
+try:
+    import orjson as json
+except ImportError:
+    import json
+
+
+
+def read_model(filename:str, shift=None)->dict:
+
+    if isinstance(filename, str) and filename.endswith(".tcl"):
+        import opensees.tcl
+        with open(filename, "r") as f:
+            interp = opensees.tcl.exec(f.read(), silent=True, analysis=False)
+        return interp.serialize()
+
+    try:
+        with open(filename,"r") as f:
+            sam = json.loads(f.read())
+
+    except TypeError:
+        sam = json.loads(filename.read())
+
+    return sam
+
+
 class Model:
     def __iter__(self):
         # this method allows: nodes, cells = Model(mesh)

@@ -1,53 +1,20 @@
 import os
 import sys
 from pathlib import Path
-try:
-    import orjson as json
-except ImportError:
-    import json
-
-import numpy as np
-Array = np.ndarray
-FLOAT = np.float32
 
 from .config import Config, apply_config
 from .frame import FrameArtist
-
-
-Frame, Patch, Plane, Solid = range(4)
-
-# Data shaping / Misc.
-#----------------------------------------------------
-
-# The following functions are used for reshaping data
-# and carrying out other miscellaneous operations.
 
 class RenderError(Exception): pass
 
 def Canvas(subplots=None, backend=None):
     pass
 
-def read_model(filename:str, shift=None)->dict:
-
-    if isinstance(filename, str) and filename.endswith(".tcl"):
-        import opensees.tcl
-        with open(filename, "r") as f:
-            interp = opensees.tcl.exec(f.read(), silent=True, analysis=False)
-        return interp.serialize()
-
-    try:
-        with open(filename,"r") as f:
-            sam = json.loads(f.read())
-
-    except TypeError:
-        sam = json.loads(filename.read())
-
-    return sam
-
-
 def render(sam_file, res_file=None, noshow=False, ndf=6,
            artist = None, #: str|"Artist" = None,
            **opts):
+
+    import sees.model
 
     # Configuration is determined by successively layering
     # from sources with the following priorities:
@@ -60,21 +27,22 @@ def render(sam_file, res_file=None, noshow=False, ndf=6,
 
     # Read model data
     if isinstance(sam_file, (str, Path)):
-        model_data = read_model(sam_file)
+        model_data = sees.model.read_model(sam_file)
 
     elif hasattr(sam_file, "asdict"):
-        # opensees.openseespy.Model
+        # Assuming an opensees.openseespy.Model
         model_data = sam_file.asdict()
 
     elif hasattr(sam_file, "read"):
-        model_data = read_model(sam_file)
-
-    elif not isinstance(sam_file, dict):
-        model_data = read_model(sam_file)
+        model_data = sees.model.read_model(sam_file)
 
     elif isinstance(sam_file, tuple):
-        # (nodes, cells)
+        # TODO: (nodes, cells)
         pass
+
+    elif not isinstance(sam_file, dict):
+        model_data = sees.model.read_model(sam_file)
+
     else:
         model_data = sam_file
 
@@ -97,15 +65,12 @@ def render(sam_file, res_file=None, noshow=False, ndf=6,
 
 
     #
-    # Read and clean displacements 
-    # TODO: 
-    # - remove `cases` var, 
-    # - change add_state from being a generator
-    # rename `name` parameter
+    # Read and process displacements 
+    #
     if res_file is not None:
         artist.add_state(res_file,
-                           scale=config["scale"],
-                           only=config["mode_num"])
+                         scale=config["scale"],
+                         only=config["mode_num"])
 
     elif config["displ"] is not None:
         pass
