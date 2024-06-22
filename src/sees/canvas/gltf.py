@@ -14,7 +14,7 @@ import sees
 from pathlib import Path
 import numpy as np
 import pygltflib
-from .canvas import Canvas
+from .canvas import Canvas, NodeStyle, MeshStyle, LineStyle, DrawStyle
 
 GLTF_T = {
     "float32": pygltflib.FLOAT,
@@ -141,12 +141,12 @@ class GltfLibCanvas(Canvas):
 
         self.gltf.convert_images(pygltflib.ImageFormat.DATAURI)
 
-    def _init_nodes(self, scale=1):
+    def _init_nodes(self, style: NodeStyle):
         #
         #
         #
         index_t = "uint8"
-        points = scale*np.array(
+        points = style.scale*np.array(
             [
                 [-1.0, -1.0,  1.0],
                 [ 1.0, -1.0,  1.0],
@@ -157,7 +157,7 @@ class GltfLibCanvas(Canvas):
                 [ 1.0,  1.0, -1.0],
                 [-1.0,  1.0, -1.0],
             ],
-            dtype="float32",
+            dtype=self.float_t,
         )/100
 
         triangles = np.array(
@@ -210,7 +210,7 @@ class GltfLibCanvas(Canvas):
                      pygltflib.Primitive(
                          mode=pygltflib.TRIANGLES,
                          attributes=pygltflib.Attributes(POSITION=points_access),
-                         material=0,#material,
+                         material=self._get_material(style),
                          indices=indices_access
                      )
                  ]
@@ -222,44 +222,13 @@ class GltfLibCanvas(Canvas):
     def _use_asset(self, name, scale, rotation, material):
         pass
 
-#   def plot_vectors(self, locs, vecs, **kwds):
+    def plot_nodes(self, vertices, label = None, style=None, data=None, **kwds):
 
-#       ne = vecs.shape[0]
-#       for j in range(3):
-#           X = np.zeros((ne*3, 3))*np.nan
-#           for i in range(j,ne,3):
-#               X[i*3,:] = locs[i]
-#               X[i*3+1,:] = locs[i] + vecs[i]
-
-#           color = kwds.get("color", ("red", "blue", "green")[j])
-
-#           # _label = label if label is not None else ""
-#           label = kwds.get("label", "")
-#           if isinstance(label, list):
-#               label = label[j]
-#           self.data.append({
-#               "name": label,
-#               "type": "scatter3d",
-#               "mode": "lines",
-#               "x": X.T[0], "y": X.T[1], "z": X.T[2],
-#               "line": {"color": color, "width": 4},
-#               "hoverinfo":"skip",
-#               "showlegend": False
-#           })
-
-    def plot_nodes(self, coords, label = None, props=None, data=None, scale=1.0, **kwds):
-        name = label or "nodes"
-        x,y,z = coords.T
         if not hasattr(self, "_node_mesh"):
-            self._init_nodes(scale=scale)
-
-#       indices_access, points_access = self._node_access
-
-        material = self._get_material(kwds.get("color", "black"),
-                                      kwds.get("alpha",      1))
+            self._init_nodes(style or NodeStyle())
 
 
-        for coord in coords:
+        for coord in vertices:
             self.gltf.nodes.append(pygltflib.Node(
                     mesh=self._node_mesh,
                     #rotation=self._rotation,
@@ -270,7 +239,14 @@ class GltfLibCanvas(Canvas):
 
 
 
-    def _get_material(self, color, alpha=1):
+    def _get_material(self, style: DrawStyle)->int:
+        if hasattr(style,"alpha"):
+            alpha = style.alpha
+        else:
+            alpha = 1.0
+
+        color = style.color
+
         if (color, alpha) in self._color:
             return self._color[(color,alpha)]
 
@@ -302,7 +278,7 @@ class GltfLibCanvas(Canvas):
         return self._color[(color, alpha)]
 
 
-    def _push_data(self, data, target, byteStride=None):
+    def _push_data(self, data, target, byteStride=None)->int:
         self.gltf.bufferViews.append(
                 pygltflib.BufferView(
                     buffer=0,
@@ -318,16 +294,15 @@ class GltfLibCanvas(Canvas):
         return len(self.gltf.bufferViews)-1
 
 
-    def plot_lines(self, vertices, **kwds):
-        material = self._get_material(kwds.get("color", "gray"),
-                                      kwds.get("alpha",      1))
+    def plot_lines(self, vertices, style: LineStyle=None, **kwds):
+        material = self._get_material(style or LineStyle())
 
 
         # vertices is given with nans separating line groups, but
         # GLTF does not accept nans so we have to filter these
         # out, and add distinct meshes for each line group
         assert np.all(np.isnan(vertices[np.isnan(vertices[:,0]), :]))
-        points  = np.array(vertices[~np.isnan(vertices[:,0]),:], dtype="float32")
+        points  = np.array(vertices[~np.isnan(vertices[:,0]),:], dtype=self.float_t)
         points_buffer = self._push_data(points.tobytes(), pygltflib.ARRAY_BUFFER)
 
         self.gltf.accessors.append(
@@ -387,7 +362,9 @@ class GltfLibCanvas(Canvas):
             self.gltf.scenes[0].nodes.append(len(self.gltf.nodes)-1)
 
 
-    def plot_mesh(self, vertices, triangles, local_coords=None, lines=None, **kwds):
+    def plot_mesh(self, vertices, triangles, local_coords=None, style=None, **kwds):
+        
+        material = self._get_material(style or MeshStyle())
         points    = np.array(vertices, dtype=self.float_t)
         triangles = np.array(triangles,dtype=self.index_t)
 
@@ -415,10 +392,6 @@ class GltfLibCanvas(Canvas):
 
         index_access = len(self.gltf.accessors)-2
         point_access = len(self.gltf.accessors)-1
-
-
-        material = self._get_material(kwds.get("color", "gray"),
-                                      kwds.get("alpha",      1))
 
         self.gltf.meshes.append(
                pygltflib.Mesh(
@@ -458,60 +431,12 @@ class GltfLibCanvas(Canvas):
     def to_glb(self)->bytes:
         return b"".join(self.gltf.save_to_bytes())
 
-#   def show(self):
-#       import sees.server
-#       page = self._form_html("./model.glb")
-
-#       glb = b"".join(self.gltf.save_to_bytes())
-#       sees.server.Server(glb, 
-
-#       app = bottle.Bottle()
-#       app.route("/")(lambda : page )
-#       app.route("/model.glb")(lambda : glb)
-
-#       try:
-#           bottle.run(app, host="localhost", port=9090)
-#       except KeyboardInterrupt:
-#           pass
-
-
-
-    def _form_html_(self, src):
-#       with open(Path(__file__).parents[0]/"three"/"webgl_instancing_scatter.html", "r") as f:
-#       with open(Path(__file__).parents[0]/"three"/"index.html", "r") as f:
-        with open(Path(__file__).parents[0]/"three"/"gltf.html", "r") as f:
-            return f.read()
-
-    def _form_html(self, src):
-        import textwrap
-
-        return textwrap.dedent(f"""
-          <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-          <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-          <head>
-            <meta charset="utf-8">
-            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js">
-            </script>
-          </head>
-          <body>
-            <model-viewer alt="rendering"
-                          src="{src}"
-                          ar
-                          style="width: 100%; height: 1000px;"
-                          shadow-intensity="1" camera-controls touch-action="pan-y">
-            </model-viewer>
-          </body>
-          </html>
-        """)
-
     def write(self, filename=None):
-        opts = self.config
 
         self.gltf.save(filename)
 
-#       if "glb" in opts["write_file"][-3:]:
+#       if "glb" in filename[-3:]:
 #           glb = b"".join(self.gltf.save_to_bytes())
-#           with open(opts["write_file"],"wb+") as f:
+#           with open(filename,"wb+") as f:
 #               f.write(glb)
 

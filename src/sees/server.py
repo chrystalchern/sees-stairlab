@@ -5,7 +5,7 @@ import bottle
 from .viewer import Viewer
 
 class Server:
-    def __init__(self, glb=None, html=None, viewer=None):
+    def __init__(self, glb=None, html=None, artist=None, viewer=None):
         # Create App
         self._app = bottle.Bottle()
 
@@ -24,7 +24,7 @@ class Server:
         else:
             self._source = "html"
             # Create routes
-            self._app.route("/")(lambda : self.html )
+            self._app.route("/")(lambda : html )
 
     def run(self, port=None):
         if port is None:

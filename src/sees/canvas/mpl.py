@@ -1,7 +1,13 @@
 # Claudio Perez
 import numpy as np
-from .canvas import Canvas
-from ..views import VIEWS
+from .canvas import Canvas, NodeStyle, MeshStyle, LineStyle
+
+VIEWS = { # pre-defined plot views
+    "plan":    dict(azim=  0, elev= 90),
+    "sect":    dict(azim=  0, elev=  0),
+    "elev":    dict(azim=-90, elev=  0),
+    "iso":     dict(azim= 45, elev= 35)
+}
 
 class MatplotlibCanvas(Canvas):
     # vertical direction is the third coordinate
@@ -35,27 +41,37 @@ class MatplotlibCanvas(Canvas):
             ax.set_aspect("equal") #set_box_aspect(1)#, zoom=3)
         return ax
 
-    def write(self, filename=None):
-        self.ax.figure.savefig(self.config["write_file"])
+    def write(self, filename):
+        self.ax.figure.savefig(filename)
 
-    def plot_lines(self, coords, label=None, conf=None, color=None, width=0.5):
-        props = conf or {"color": color or "grey", "alpha": 0.6, "linewidth": width}
-        self.ax.plot(*coords.T, **props)
+    def plot_lines(self, vertices, label=None, style=None):
+        if style is None:
+            style = LineStyle(width=0.5, color="gray", alpha=0.6)
 
-    def plot_nodes(self, coords, label=None, conf=None, data=None):
-        ax = self.ax
-        props = {"color": "black",
+        # Map the LineStyle attributes to Matplotlib's kwds
+        props = {"color":     style.color, 
+                 "alpha":     style.alpha, 
+                 "linewidth": style.width}
+        self.ax.plot(*vertices.T, **props)
+
+    def plot_nodes(self, vertices, label=None, style=None, data=None):
+        if style is None:
+            style = NodeStyle(color="black")
+
+        props = {"color":  style.color,
                  "marker": "s",
-                 "s": 0.1,
+                 "s":      0.1*style.scale,
                  "zorder": 2
         }
-        self.ax.scatter(*coords.T, **props)
+        self.ax.scatter(*vertices.T, **props)
+
+    def plot_mesh(self, vertices, indices, local_coords=None, style=None):
+        if style is None:
+            style = MeshStyle()
+        self.ax.plot_trisurf(*np.array(vertices).T, triangles=indices, color=style.color)
+
 
     def plot_vectors(self, locs, vecs, alr=0.1, **kwds):
         self.ax.quiver(*locs, *vecs, arrow_length_ratio=alr, color="black")
-
-    def plot_trisurf(self, xyz, ijk):
-        ax.plot_trisurf(*xyz.T, triangles=ijk)
-
 
 

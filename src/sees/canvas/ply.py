@@ -1,5 +1,5 @@
 # Claudio Perez
-from .canvas import Canvas
+from .canvas import Canvas, NodeStyle, MeshStyle, LineStyle
 import numpy as np
 
 class PlotlyCanvas(Canvas):
@@ -10,9 +10,98 @@ class PlotlyCanvas(Canvas):
         self.config = config
         self.annotations = []
 
-    def show(self):
+    def plot_nodes(self, coords, label = None, style=None, data=None):
+        name = label or "nodes"
+        x,y,z = coords.T
+        keys  = ["tag","crd"]
 
-        self.fig.show(renderer="browser")
+        trace = {
+                "name": name,
+                "x": x, "y": y, "z": z,
+                "type": "scatter3d","mode": "markers",
+                "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
+                "customdata": data,
+                "marker": {
+                    "symbol": "square",
+                    **self.config["objects"]["nodes"]["default"]
+                },
+                "showlegend": False
+        }
+        self.data.append(trace)
+
+    def plot_lines(self, vertices, label=None, style=None):
+        if style is None:
+            style = LineStyle(color="#808080")
+    
+        x,y,z = vertices.T
+        data = {
+            "name": label if label is not None else "",
+            "type": "scatter3d",
+            "mode": "lines",
+            "projection": dict(
+                z=dict(show=True),
+            ),
+            "x": x, "y": y, "z": z,
+            "line": {"color": style.color, "width": style.width},
+            "hoverinfo":"skip"
+        }
+        self.data.append(data)
+
+    def annotate(self, text, coords, **kwds):
+        self.annotations.append({
+            "text": text,
+            "showarrow": False,
+            "xanchor": "left",
+            "yshift": -10,
+           #"yshift":  10, # For hockling
+            "xshift":   5,
+            "font": {"color": "black", "size": 48},
+            "x": coords[0], "y": coords[1], "z": coords[2],
+            **kwds
+        })
+
+    def plot_vectors(self, locs, vecs, **kwds):
+
+        ne = vecs.shape[0]
+        for j in range(3):
+            X = np.zeros((ne*3, 3))*np.nan
+            for i in range(j,ne,3):
+                X[i*3,:] = locs[i]
+                X[i*3+1,:] = locs[i] + vecs[i]
+
+            color = kwds.get("color", ("red", "blue", "green")[j])
+
+            # _label = label if label is not None else ""
+            label = kwds.get("label", "")
+            if isinstance(label, list):
+                label = label[j]
+            self.data.append({
+                "name": label,
+                "type": "scatter3d",
+                "mode": "lines",
+                "x": X.T[0], "y": X.T[1], "z": X.T[2],
+                "line": {"color": color, "width": 4},
+                "hoverinfo":"skip",
+                "showlegend": False
+            })
+
+    def plot_mesh(self, vertices, triangles, style=None, local_coords=None):
+        if style is None:
+            style = MeshStyle()
+
+        x,y,z = zip(*vertices)
+        i,j,k = zip(*triangles)
+        self.data.append({
+            #"name": label if label is not None else "",
+            "type": "mesh3d",
+            "x": x, "y": y, "z": z, 
+            "i": i, "j": j, "k": k,
+            "hoverinfo":"skip",
+#           "lighting": dict(ambient=0.9, roughness=0.5, specular=2),
+#           "lighting": dict(ambient=0.4, diffuse=0.5, roughness = 0.9, specular=0.6, fresnel=0.2),
+            "opacity": style.alpha,
+            "color":   style.color,
+        })
 
     def build(self):
         opts = self.config
@@ -74,17 +163,16 @@ class PlotlyCanvas(Canvas):
                                  div_id=str(id(self)),
                                  **self.config["save_options"]["html"])
 
-    def write(self, filename=None, format=None):
-        opts = self.config
+    def write(self, filename, format=None):
         if "html" in filename:
-            with open(opts["write_file"],"w+") as f:
+            with open(filename,"w+") as f:
                 f.write(self.to_html())
 
         elif "png" in filename:
             self.fig.write_image(filename, width=1920, height=1080)
 
-        elif "json" in opts["write_file"]:
-            with open(opts["write_file"],"w+") as f:
+        elif "json" in filename:
+            with open(filename,"w+") as f:
                 self.fig.write_json(f)
 
     def make_hover_data(self, data, ln=None):
@@ -99,95 +187,3 @@ class PlotlyCanvas(Canvas):
             "customdata": list(items),
         }
 
-
-    def plot_nodes(self, coords, label = None, props=None, data=None, scale=1):
-        name = label or "nodes"
-        x,y,z = scale*coords.T
-        keys  = ["tag","crd"]
-
-        trace = {
-                "name": name,
-                "x": x, "y": y, "z": z,
-                "type": "scatter3d","mode": "markers",
-                "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
-                "customdata": data,
-                "marker": {
-                    "symbol": "square",
-                    **self.config["objects"]["nodes"]["default"]
-                },
-                "showlegend": False
-        }
-        self.data.append(trace)
-
-    def plot_lines(self, coords, label=None, props=None, color=None, width=None):
-        x,y,z = coords.T
-        props = {"color": color or "#808080", "alpha": 0.6}
-        data = {
-            "name": label if label is not None else "",
-            "type": "scatter3d",
-            "mode": "lines",
-            "projection": dict(
-                z=dict(show=True),
-            ),
-            "x": x, "y": y, "z": z,
-            "line": {"color": props["color"] if color is None else color, "width": width},
-            "hoverinfo":"skip"
-        }
-        self.data.append(data)
-
-    def annotate(self, text, coords, **kwds):
-        self.annotations.append({
-            "text": text,
-            "showarrow": False,
-            "xanchor": "left",
-            "yshift": -10,
-           #"yshift":  10, # For hockling
-            "xshift":   5,
-            "font": {"color": "black", "size": 48},
-            "x": coords[0], "y": coords[1], "z": coords[2],
-            **kwds
-        })
-
-    def plot_vectors(self, locs, vecs, **kwds):
-
-        ne = vecs.shape[0]
-        for j in range(3):
-            X = np.zeros((ne*3, 3))*np.nan
-            for i in range(j,ne,3):
-                X[i*3,:] = locs[i]
-                X[i*3+1,:] = locs[i] + vecs[i]
-
-            color = kwds.get("color", ("red", "blue", "green")[j])
-
-            # _label = label if label is not None else ""
-            label = kwds.get("label", "")
-            if isinstance(label, list):
-                label = label[j]
-            self.data.append({
-                "name": label,
-                "type": "scatter3d",
-                "mode": "lines",
-                "x": X.T[0], "y": X.T[1], "z": X.T[2],
-                "line": {"color": color, "width": 4},
-                "hoverinfo":"skip",
-                "showlegend": False
-            })
-
-    def plot_mesh(self, vertices, triangles, color=None, opacity=None):
-        if color is None or color == "metal":
-            color = "gray"
-
-        x,y,z = zip(*vertices)
-        i,j,k = zip(*triangles)
-        self.data.append({
-            #"name": label if label is not None else "",
-            "type": "mesh3d",
-            "x": x, "y": y, "z": z, "i": i, "j": j, "k": k,
-            "hoverinfo":"skip",
-#           "lighting": dict(ambient=0.9, roughness=0.5, specular=2),
-#           "lighting": dict(ambient=0.4, diffuse=0.5, roughness = 0.9, specular=0.6, fresnel=0.2),
-            "opacity": 1.0 if opacity is None else opacity,
-            "color": color,
-            # "color": "white",
-            # "opacity": 0.2
-        })
