@@ -11,6 +11,7 @@ from scipy.linalg import block_diag
 from sees.model  import FrameModel
 from sees.state  import read_state, State
 from sees.config import Config, apply_config
+from sees.canvas.canvas import LineStyle
 
 
 # Data shaping / Misc.
@@ -418,13 +419,11 @@ class FrameArtist:
             elif len(el["crd"]) == 2:
                 coords[(N+1)*i:(N+1)*i+N,:] = np.linspace(*el["crd"], N)
 
-        self.canvas.plot_lines(coords[:, :self.ndm], color="red", label=label)
+        self.canvas.plot_lines(coords[:, :self.ndm], style=LineStyle(color="red"), label=label)
 
     def plot_nodes(self, state=None, data=None):
         coord = self.model.node_position(state=state)
-        self.canvas.plot_nodes(coord[:,:self.ndm],
-                               data=data,
-                               scale=self.config["objects"]["nodes"]["scale"])
+        self.canvas.plot_nodes(coord[:,:self.ndm], data=data)
 
     def add_triads(self):
         ne = len(self.model["assembly"])

@@ -20,24 +20,24 @@ class TrimeshCanvas(Canvas):
 #               trimesh.path.entities.Line(coords)
 #       )
 
-    def plot_mesh(self,vertices, triangles):
+    def plot_mesh(self,vertices, indices):
         import trimesh
         mesh = trimesh.Trimesh(vertices=vertices,
-                               faces=triangles)
+                               faces=indices)
         # set the mesh face colors to white
         mesh.visual.face_colors = [250, 250, 250, 250]
         self.scene.add_geometry(mesh)
 
-    def write(self, filename=None):
+    def write(self, filename):
         import trimesh
         opts = self.config
 
-        if "glb" in opts["write_file"][-3:]:
-            with open(opts["write_file"],"wb+") as f:
+        if "glb" in filename[-3:]:
+            with open(filename,"wb+") as f:
                 f.write(trimesh.exchange.gltf.export_glb(self.scene))
 
-        elif "gltf" in opts["write_file"][-4:]:
+        elif "gltf" in filename[-4:]:
             import json
-            with open(opts["write_file"],"w+") as f:
+            with open(filename,"w+") as f:
                 json.dump(trimesh.exchange.gltf.export_gltf(self.scene), f)
 

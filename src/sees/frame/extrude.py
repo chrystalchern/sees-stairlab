@@ -9,9 +9,10 @@ import sees
 import sees.frame
 from sees import RenderError
 from sees.model import read_model
+from sees.canvas.canvas import MeshStyle, LineStyle
 
 
-def draw_extrusions(model, canvas, state=None, options=None):
+def draw_extrusions(model, canvas, state=None, options=None, mesh_style=None):
     #
     #     x-------o---------o---------o
     #   /       /         /
@@ -27,6 +28,9 @@ def draw_extrusions(model, canvas, state=None, options=None):
     coords = [] # Global mesh coordinates
     triang = [] # Triangle indices into coords
     locoor = [] # Local mesh coordinates, used for textures
+
+    if mesh_style is None:
+        mesh_style = MeshStyle(color="gray")
 
     I = 0
     for i,el in enumerate(model["assembly"].values()):
@@ -60,9 +64,9 @@ def draw_extrusions(model, canvas, state=None, options=None):
             for k,edge in enumerate(outline):
                 # Append rotated section coordinates to list of coordinates
                 coords.append(X[j, :] + R[j]@[0, *edge])
-                xl = [(j+0)/nen+0.1,  0.1+(k+0)/(noe+0)]
-                print(xl)
-                locoor.append(xl)
+                locoor.append(
+                             [ (j+0)/nen+0.1,  0.1+(k+0)/(noe+0) ]
+                )
 
                 if j == 0:
                     # Skip the first section
@@ -85,10 +89,8 @@ def draw_extrusions(model, canvas, state=None, options=None):
 
     triang = [list(reversed(i)) for i in triang]
 
-    canvas.plot_mesh(coords, triang, locoor if state is None else None,
-                           color   = "gray" if state is not None else "metal",
-                           opacity = None   if state is not None else 0.2
-    )
+    canvas.plot_mesh(coords, triang, local_coords=locoor, style=mesh_style)
+
     show_edges = True
 
     if not show_edges:
@@ -105,7 +107,8 @@ def draw_extrusions(model, canvas, state=None, options=None):
     coords = np.array(coords)
     if "extrude.sections" in options["show_objects"]:
         tri_points = np.array([
-            coords[idx]  if (j+1)%3 else nan for j,idx in enumerate(np.array(triang).reshape(-1))
+            coords[idx]  if (j+1)%3 else nan
+            for j,idx in enumerate(np.array(triang).reshape(-1))
         ])
     else:
         tri_points = np.array([
@@ -114,8 +117,11 @@ def draw_extrusions(model, canvas, state=None, options=None):
         ])
 
     canvas.plot_lines(tri_points,
+                        style=LineStyle(
                              color="black" if state is not None else "#808080",
-                             width=4)
+                             width=4
+                        )
+    )
 
 class so3:
     @classmethod
@@ -140,7 +146,7 @@ def _add_moment(artist, loc, axis):
     artist.canvas.plot_mesh(coords, triangles)
 
 
-def _render(sam_file, res_file=None, noshow=False, **opts):
+def _render(sam_file, res_file=None, **opts):
     # Configuration is determined by successively layering
     # from sources with the following priorities:
     #      defaults < file configs < kwds 
