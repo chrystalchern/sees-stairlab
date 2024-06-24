@@ -7,10 +7,22 @@ from .frame import FrameArtist
 
 class RenderError(Exception): pass
 
+assets = Path(__file__).parents[0]/"assets/"
+
 def Canvas(subplots=None, backend=None):
     pass
 
-assets = Path(__file__).parents[0]/"assets/"
+
+def serve(artist, viewer="mv", port=None):
+    import sees.server
+    if hasattr(artist.canvas, "to_glb"):
+        server = sees.server.Server(glb=artist.canvas.to_glb(),
+                                    viewer=viewer)
+        server.run(port=port)
+
+    elif hasattr(artist.canvas, "to_html"):
+        server = sees.server.Server(html=artist.canvas.to_html())
+        server.run(port=port)
 
 def render(sam_file, res_file=None, noshow=False, ndf=6,
            artist = None, #: str|"Artist" = None,
@@ -84,6 +96,7 @@ def render(sam_file, res_file=None, noshow=False, ndf=6,
                                         scale=config["scale"],
                                         only=config["mode_num"]))
 
+    artist.draw()
 
     return artist
 
