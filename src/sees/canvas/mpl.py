@@ -13,9 +13,10 @@ class MatplotlibCanvas(Canvas):
     # vertical direction is the third coordinate
     vertical = 3
 
-    def __init__(self, ndm=3, ax=None):
+    def __init__(self, config=None, ndm=3, ax=None):
 
         self.ndm = ndm
+        self.config = config
 
         import matplotlib.pyplot as plt
         self.plt = plt
@@ -49,12 +50,12 @@ class MatplotlibCanvas(Canvas):
             style = LineStyle(width=0.5, color="gray", alpha=0.6)
 
         # Map the LineStyle attributes to Matplotlib's kwds
-        props = {"color":     style.color, 
-                 "alpha":     style.alpha, 
+        props = {"color":     style.color,
+                 "alpha":     style.alpha,
                  "linewidth": style.width}
         self.ax.plot(*vertices.T, **props)
 
-    def plot_nodes(self, vertices, label=None, style=None, data=None):
+    def plot_nodes(self, vertices, label=None, style=None, rotations=None, data=None):
         if style is None:
             style = NodeStyle(color="black")
 
@@ -72,6 +73,6 @@ class MatplotlibCanvas(Canvas):
 
 
     def plot_vectors(self, locs, vecs, alr=0.1, **kwds):
-        self.ax.quiver(*locs, *vecs, arrow_length_ratio=alr, color="black")
+        self.ax.quiver(*locs.T, *vecs.T, arrow_length_ratio=alr, color="black")
 
 

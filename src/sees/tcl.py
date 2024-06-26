@@ -1,8 +1,9 @@
 import sys
 import json
 from functools import partial
-from sees.cli import parse_args
-from sees import config, render, RenderError
+from sees import config, render
+from sees.parser import parse_args
+from sees.errors import RenderError
 
 def _render(*args, rt=None):
     try:

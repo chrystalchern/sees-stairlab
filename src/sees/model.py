@@ -1,4 +1,7 @@
 # Claudio Perez
+import warnings
+from collections import defaultdict
+
 import numpy as np
 
 try:
@@ -9,26 +12,25 @@ except ImportError:
 _EYE3 = np.eye(3)
 
 _OUTLINES = {
-            None:      None,
-            "square":  np.array([[-1., -1.],
-                                 [ 1., -1.],
-                                 [ 1.,  1.],
-                                 [-1.,  1.]])/10,
+    None:      None,
+    "square":  np.array([[-1., -1.],
+                         [ 1., -1.],
+                         [ 1.,  1.],
+                         [-1.,  1.]])/10,
 
-            "tee":     np.array([[ 6.0,  0.0],
-                                 [ 6.0,  4.0],
-                                 [-6.0,  4.0],
-                                 [-6.0,  0.0],
-                                 [-2.0,  0.0],
-                                 [-2.0, -8.0],
-                                 [ 2.0, -8.0],
-                                 [ 2.0,  0.0]])/10
-        }
+    "tee":     np.array([[ 6.0,  0.0],
+                         [ 6.0,  4.0],
+                         [-6.0,  4.0],
+                         [-6.0,  0.0],
+                         [-2.0,  0.0],
+                         [-2.0, -8.0],
+                         [ 2.0, -8.0],
+                         [ 2.0,  0.0]])/10
+}
 
 
 
 def read_model(filename:str, shift=None)->dict:
-
     if isinstance(filename, str) and filename.endswith(".tcl"):
         import opensees.tcl
         with open(filename, "r") as f:
@@ -72,25 +74,18 @@ class Model:
 
     def cell_interior(self, tag):   ...
 
-    def cell_orientation(self, tag): ...
+    def cell_rotation(self, tag, state): ...
 
     def cell_position(self, tag, state):   ...
 
     def cell_outline(self,  tag):   ...
 
-
     def cell_information(self, tag): ...
 
-class SolidModel:
-    pass
+
 
 class FrameModel:
     def __init__(self, sam:dict, shift = None, rot=None, **kwds):
-        """
-        Process OpenSees JSON output and return dict with the form:
-
-            {<elem tag>: {"crd": [<coordinates>], ...}}
-        """
 
         self._frame_outlines = None
         self._extrude_default = _OUTLINES[kwds.get("extrude_default", "square")]
@@ -106,6 +101,9 @@ class FrameModel:
 
         #
         self._data = _from_opensees(sam, shift, R)# output
+
+        self.ndm = self._data["ndm"]
+        self.ndf = self._data["ndf"]
 
     def __getitem__(self, key):
         return self._data[key]
@@ -135,12 +133,57 @@ class FrameModel:
             return self["assembly"][tag]
 
     def cell_prototypes(self)->"iter":
-        pass
+        exclude_keys = {"type", "instances", "nodes",
+                        "crd", "crdTransformation"}
+
+        if not self["prototypes"]:
+            elem_types = defaultdict(dict)
+
+            for elem in self["assembly"].values():
+                type = elem["type"]
+                if type not in elem_types:
+                    elem_types[type]["name"] = type
+                    elem_types[type]["variants"] = []
+                    elem_types[type]["instances"] = [elem["name"]]
+                    elem_types[type]["properties"] = {
+                        k: v for k,v in elem.items() if k not in exclude_keys
+                    }
+                else:
+                    elem_types[type]["instances"].append(elem["name"])
+
+
+            elem_types = list(elem_types.values())
+        else:
+            elem_types = [
+                {
+                    "name": f"{elem['type']}<{elem['name']}>",
+                    "instances": [self["assembly"][i]["name"] for i in elem["instances"]],
+                    "properties":  [
+                        [str(v) for k,v in elem.items() if k not in exclude_keys]
+                        #for _ in range(len(elem["instances"]))
+                    ]*(len(elem["instances"])),
+                    "coords": [self["assembly"][i]["crd"] for i in elem["instances"]],
+                    "keys":   [k for k in elem.keys() if k not in exclude_keys]
+
+                } for elem in self["prototypes"].get("elements", [])
+            ]
+        return elem_types
 
     def iter_node_tags(self):
         for tag in self["nodes"]:
             yield tag
-    
+
+    def iter_cell_tags(self):
+        for tag in self["assembly"]:
+            yield tag
+
+
+    def iter_nodes(self, keys=None):
+        pass
+
+    def iter_cells(self, keys=None):
+        pass
+
     def node_properties(self, tag=None)->dict:
         return self["nodes"][tag]
 
@@ -151,6 +194,16 @@ class FrameModel:
             }
         return self._node_indices[tag]
 
+    def node_rotation(self, tag=None, state=None):
+        if state is None:
+            eye = np.eye(3)
+            if tag is None:
+                return [eye for i in self.iter_node_tags()]
+            else:
+                return eye
+        else:
+            return state.node_array(tag, dof=state.rotation)
+
     def node_position(self, tag=None, state=None):
 
         if tag is None:
@@ -159,13 +212,61 @@ class FrameModel:
             pos = self["nodes"][tag]["crd"]
 
         if state is not None:
-            pos += state.node_array(tag)
+            pos = pos + state.node_array(tag, dof=state.position)
 
         return pos
 
     def cell_position(self, tag, state=None):
-        return np.array([ self.node_position(node, state)
-                          for node in self["assembly"][tag]["nodes"] ])
+        if isinstance(tag, list):
+            return np.array([[
+                    self.node_position(node, state) for node in self["assembly"][t]["nodes"]
+                ] for t in tag
+            ])
+        else:
+            return np.array([ self.node_position(node, state)
+                              for node in self["assembly"][tag]["nodes"] ])
+
+    def frame_orientation(self, tag, state=None):
+        el  = self["assembly"][tag]
+        xyz = el["crd"]
+
+        v1  = xyz[-1] - xyz[0]
+        L   = np.linalg.norm(v1)
+        e1  = v1/L
+
+        if self.ndm == 2:
+            v2 = np.array([0, 1, 0])
+
+        if "yvec" in el["trsfm"] and el["trsfm"]["yvec"] is not None:
+            v2  = np.array(el["trsfm"]["yvec"])
+
+        elif "vecInLocXZPlane" in el["trsfm"]:
+            v13 =  np.atleast_1d(el["trsfm"]["vecInLocXZPlane"])
+            v2  = -np.cross(e1,v13)
+
+        else:
+            return _EYE3
+
+        e2 = v2 / np.linalg.norm(v2)
+        v3 = np.cross(e1,e2)
+        e3 = v3 / np.linalg.norm(v3)
+        return np.stack([e1,e2,e3])
+
+
+    def cell_exterior(self, tag):
+        type = self["assembly"][tag]["type"].lower()
+
+        if "frm" in type or "beamcol" in type:
+            return self.cell_indices(tag)
+
+        elif ("quad" in type or \
+              "shell" in type and ("q" in type) or ("mitc" in type)):
+            return self.cell_indices(tag)
+
+        return []
+
+    def cell_interpolation(self, tag):
+        pass
 
     def cell_triangles(self, tag):
         type = self["assembly"][tag]["type"].lower()
@@ -182,37 +283,10 @@ class FrameModel:
                         [nodes[2], nodes[3], nodes[0]]]
         return []
 
-    def frame_orientation(self, tag):
-        el = self["assembly"][tag]
+    def add_hook():
+        pass
 
-        xyz = el["crd"]
-        dx = xyz[-1] - xyz[0]
-        L = np.linalg.norm(dx)
-        e1 = dx/L
-
-        if "yvec" in el["trsfm"] and el["trsfm"]["yvec"] is not None:
-            e2 = np.array(el["trsfm"]["yvec"])
-            v3 = np.cross(e1,e2)
-            norm_v3 = np.linalg.norm(v3)
-            e3 = v3 / norm_v3
-            return np.stack([e1,e2,e3])
-
-        elif "vecInLocXZPlane" in el["trsfm"]:
-            v13 = np.atleast_1d(el["trsfm"]["vecInLocXZPlane"])
-            v2 = -np.cross(e1,v13)
-            norm_v2 = np.linalg.norm(v2)
-            if norm_v2 < 1e-8:
-                v2 = -np.cross(e1,np.array([*reversed(vert)]))
-                norm_v2 = np.linalg.norm(v2)
-            e2 = v2 / norm_v2
-            v3 =  np.cross(e1,e2)
-            e3 = v3 / np.linalg.norm(v3)
-            return np.stack([e1,e2,e3])
-        else:
-            print(el)
-            return _EYE3
-
-    def frame_outline(self, tag):
+    def cell_surface(self, tag):
         if self._frame_outlines is None:
             self._frame_outlines = _get_frame_outlines(self)
 
@@ -236,20 +310,27 @@ def _from_opensees(sam, shift, R):
     try:
         #coord = np.array([R@n.pop("crd") for n in geom["nodes"]], dtype=float) + shift
         coord = np.array([R@n["crd"] for n in geom["nodes"]], dtype=float) + shift
+        ndm = 3
     except:
         coord = np.array([R@[*n["crd"], 0.0] for n in geom["nodes"]], dtype=float) + shift
+        ndm = 2
 
     nodes = {
         n["name"]: {**n, "crd": coord[i], "idx": i}
             for i,n in enumerate(geom["nodes"])
     }
 
-    ndm = len(next(iter(nodes.values()))["crd"])
+#   ndm = len(next(iter(nodes.values()))["crd"])
+    ndf = next(iter(nodes.values())).get("ndf", None)
 
-    try:
-        trsfm = {int(t["name"]): t for t in sam["properties"]["crdTransformations"]}
-    except KeyError:
-        trsfm = {}
+    trsfm = {}
+    for t in sam.get("properties", {}).get("crdTransformations", []):
+        trsfm[int(t["name"])] = {
+                k: val for k,val in t.items() if k != "vecInLocXZPlane"
+        }
+        if ndm == 3:
+            trsfm[int(t["name"])]["vecInLocXZPlane"] = R@t["vecInLocXZPlane"]
+
 
     elems =  {
         e["name"]: dict(
@@ -267,19 +348,19 @@ def _from_opensees(sam, shift, R):
         sections = {}
 
     output = dict(nodes=nodes,
-                    assembly=elems,
-                    sam=sam,
-                    sections=sections,
-                    ndm=ndm)
-
-    if "prototypes" in sam:
-        output.update({"prototypes": sam["prototypes"]})
+                  assembly=elems,
+                  sam=sam,
+                  sections=sections,
+                  prototypes=sam.get("prototypes", {}),
+                  ndm=ndm,
+                  ndf=ndf
+    )
 
     return output
 
 
 def _add_section_shape(section, sections=None, outlines=None):
-    from scipy.spatial import ConvexHull
+    import scipy.spatial
 
     # Rotation to change coordinates from x-y to z-y
     R = np.array(((0,-1),
@@ -296,9 +377,13 @@ def _add_section_shape(section, sections=None, outlines=None):
         outlines[section["name"]] = [R@s for s in section["bounding_polygon"]]
 
     elif "fibers" in section:
-        #outlines[section["name"]] = _alpha_shape(np.array([f["coord"] for f in section["fibers"]]))
         points = np.array([f["coord"] for f in section["fibers"]])
-        outlines[section["name"]] = points[ConvexHull(points).vertices]
+        try:
+            outlines[section["name"]] = points[scipy.spatial.ConvexHull(points).vertices]
+        except scipy.spatial._qhull.QhullError as e:
+            from sees.utility.alpha_shape import alpha_shape
+            outlines[section["name"]] = alpha_shape(points, 1)
+           #warnings.warn(str(e))
 
 
 def _get_frame_outlines(model):

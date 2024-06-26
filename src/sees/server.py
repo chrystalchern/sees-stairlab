@@ -45,6 +45,6 @@ if __name__ == "__main__":
     with open(filename, "rb") as f:
         glb = f.read()
 
-    Server(glb, **options).run()
+    Server(glb=glb, **options).run()
 
 

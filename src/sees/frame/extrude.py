@@ -7,12 +7,12 @@ import shps.curve
 
 import sees
 import sees.frame
-from sees import RenderError
 from sees.model import read_model
-from sees.canvas.canvas import MeshStyle, LineStyle
+from sees.errors import RenderError
+from sees.config import MeshStyle, LineStyle
 
 
-def draw_extrusions(model, canvas, state=None, options=None, mesh_style=None):
+def draw_extrusions(model, canvas, state=None, config=None):
     #
     #     x-------o---------o---------o
     #   /       /         /
@@ -29,18 +29,19 @@ def draw_extrusions(model, canvas, state=None, options=None, mesh_style=None):
     triang = [] # Triangle indices into coords
     locoor = [] # Local mesh coordinates, used for textures
 
-    if mesh_style is None:
-        mesh_style = MeshStyle(color="gray")
+    if config is None:
+        config = {
+                "style": MeshStyle(color="gray")
+        }
 
     I = 0
     for i,el in enumerate(model["assembly"].values()):
-        # TODO: probably better to loop over sections dict rather
-        #       than elements
-        outline = model.frame_outline(el["name"])
+
+        outline = model.cell_surface(el["name"])
         if outline is None:
             continue
 
-        outline = outline*options["objects"]["sections"]["scale"]
+        outline = outline*config["scale"]
 
         nen  = len(el["nodes"])
 
@@ -52,9 +53,7 @@ def draw_extrusions(model, canvas, state=None, options=None, mesh_style=None):
         else:
             outline = outline*0.98
             X = np.array(el["crd"])
-#           R = [sees.frame.orientation(el["crd"], el["trsfm"]["yvec"]).T]*N
             R = [model.frame_orientation(el["name"]).T]*nen
-
 
 
         # Loop over sample points along element length to assemble
@@ -89,7 +88,7 @@ def draw_extrusions(model, canvas, state=None, options=None, mesh_style=None):
 
     triang = [list(reversed(i)) for i in triang]
 
-    canvas.plot_mesh(coords, triang, local_coords=locoor, style=mesh_style)
+    canvas.plot_mesh(coords, triang, local_coords=locoor, style=config["style"])
 
     show_edges = True
 
@@ -105,22 +104,25 @@ def draw_extrusions(model, canvas, state=None, options=None, mesh_style=None):
 
     nan = np.zeros(ndm)*np.nan
     coords = np.array(coords)
-    if "extrude.sections" in options["show_objects"]:
+    if "tran" in config["outline"]:
         tri_points = np.array([
             coords[idx]  if (j+1)%3 else nan
             for j,idx in enumerate(np.array(triang).reshape(-1))
         ])
-    else:
+    elif "long" in config["outline"]:
         tri_points = np.array([
             coords[i]  if j%2 else nan
             for j,idx in enumerate(np.array(triang)) for i in idx[IDX[j%2]]
         ])
+    else:
+        return
 
     canvas.plot_lines(tri_points,
-                        style=LineStyle(
-                             color="black" if state is not None else "#808080",
-                             width=4
-                        )
+                      style=config["line_style"]
+                       #LineStyle(
+                       #     color="black" if state is not None else "#808080",
+                       #     width=4
+                       #)
     )
 
 class so3:
@@ -155,7 +157,7 @@ def _render(sam_file, res_file=None, **opts):
 
 
     if sam_file is None:
-        raise RenderError("ERROR -- expected positional argument <sam-file>")
+        raise RenderError("Expected positional argument <sam-file>")
 
     # Read and clean model
     if not isinstance(sam_file, dict):
@@ -170,7 +172,7 @@ def _render(sam_file, res_file=None, **opts):
 
     artist = sees.FrameArtist(model, **config)
 
-    draw_extrusions(artist.model, artist.canvas, options=opts)
+    draw_extrusions(artist.model, artist.canvas, config=opts)
 
     # -----------------------------------------------------------
 
@@ -186,17 +188,16 @@ def _render(sam_file, res_file=None, **opts):
                     axis = [0, np.pi/2, 0])
         # -----------------------------------------------------------
 
+    artist.draw()
     return artist
 
 
 if __name__ == "__main__":
-    import sees.__main__
-    config = sees.__main__.parse_args(sys.argv)
+    import sees.parser
+    config = sees.parser.parse_args(sys.argv)
 
     try:
         artist = _render(**config)
-
-        artist.draw()
 
         # write plot to file if output file name provided
         if config["write_file"]:

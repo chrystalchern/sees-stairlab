@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 import bottle
-from sees.canvas.canvas import Canvas
+from sees.config import Canvas
 
 import numpy as np
 

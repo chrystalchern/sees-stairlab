@@ -9,12 +9,22 @@
   where the w-component is the cosine of half of the rotation angle.
   For example, the quaternion [ 0.259, 0.0, 0.0, 0.966 ] describes a rotation
   about 30 degrees, around the x-axis.
+- The identity rotation is (0, 0, 0, 1.0)
+
 """
+import sys
 import sees
+import warnings
+import itertools
 from pathlib import Path
+
 import numpy as np
 import pygltflib
-from .canvas import Canvas, NodeStyle, MeshStyle, LineStyle, DrawStyle
+from scipy.spatial.transform import Rotation
+from .canvas import Canvas
+
+from sees import utility
+from sees.config import NodeStyle, MeshStyle, LineStyle, DrawStyle
 
 GLTF_T = {
     "float32": pygltflib.FLOAT,
@@ -22,15 +32,6 @@ GLTF_T = {
     "uint16":  pygltflib.UNSIGNED_SHORT,
 }
 
-def _split(a, value, source=None):
-    # like str.split, but for arrays
-    if source is None:
-        source = a
-    if np.isnan(value):
-        idx = np.where(~np.isnan(source))[0]
-    else:
-        idx = np.where(source != value)[0]
-    return np.split(a[idx],np.where(np.diff(idx)!=1)[0]+1)
 
 class GltfLibCanvas(Canvas):
     vertical = 2
@@ -131,15 +132,18 @@ class GltfLibCanvas(Canvas):
         #
         # load assets for steel material
         #
-#       for i,file in enumerate(("baseColor.png", "occlusionRoughnessMetallic.png")):
-        for i,file in enumerate(("rust.jpg", "occlusionRoughnessMetallic.png")):
-            path  = str(sees.assets/"metal"/file)
-            image = pygltflib.Image()
-            image.uri = path
-            self.gltf.images.append(image)
-            self.gltf.textures.append(pygltflib.Texture(source=i, name=path))
+        try:
+#           for i,file in enumerate(("baseColor.png", "occlusionRoughnessMetallic.png")):
+            for i,file in enumerate(("rust.jpg", "occlusionRoughnessMetallic.png")):
+                path  = str(sees.assets/"metal"/file)
+                image = pygltflib.Image()
+                image.uri = path
+                self.gltf.images.append(image)
+                self.gltf.textures.append(pygltflib.Texture(source=i, name=path))
 
-        self.gltf.convert_images(pygltflib.ImageFormat.DATAURI)
+            self.gltf.convert_images(pygltflib.ImageFormat.DATAURI)
+        except:
+            warnings.warn(f"Failed to load assets from {sees.assets}.")
 
     def _init_nodes(self, style: NodeStyle):
         #
@@ -158,7 +162,7 @@ class GltfLibCanvas(Canvas):
                 [-1.0,  1.0, -1.0],
             ],
             dtype=self.float_t,
-        )/100
+        )/10
 
         triangles = np.array(
             [
@@ -222,16 +226,24 @@ class GltfLibCanvas(Canvas):
     def _use_asset(self, name, scale, rotation, material):
         pass
 
-    def plot_nodes(self, vertices, label = None, style=None, data=None, **kwds):
+    def plot_nodes(self, vertices, label = None, style=None, data=None, rotations=None, **kwds):
 
         if not hasattr(self, "_node_mesh"):
             self._init_nodes(style or NodeStyle())
 
+        if rotations is None:
+            rotations = itertools.repeat([0, 0, 0, 1.0])
+        else:
+            try:
+                rotations = Rotation.from_matrix([self._rotation_matrix@R for R in rotations]).as_quat().tolist()
+            except ValueError:
+                rotations = Rotation.from_rotvec([self._rotation_matrix@R for R in rotations]).as_quat().tolist()
 
-        for coord in vertices:
+
+        for coord, rotation in zip(vertices, rotations):
             self.gltf.nodes.append(pygltflib.Node(
                     mesh=self._node_mesh,
-                    #rotation=self._rotation,
+                    rotation=rotation,
                     translation=(self._rotation_matrix@coord).tolist(),
                 )
             )
@@ -294,7 +306,7 @@ class GltfLibCanvas(Canvas):
         return len(self.gltf.bufferViews)-1
 
 
-    def plot_lines(self, vertices, style: LineStyle=None, **kwds):
+    def plot_lines(self, vertices, indices=None, style: LineStyle=None, **kwds):
         material = self._get_material(style or LineStyle())
 
 
@@ -303,6 +315,9 @@ class GltfLibCanvas(Canvas):
         # out, and add distinct meshes for each line group
         assert np.all(np.isnan(vertices[np.isnan(vertices[:,0]), :]))
         points  = np.array(vertices[~np.isnan(vertices[:,0]),:], dtype=self.float_t)
+
+        if points.size == 0:
+            return
         points_buffer = self._push_data(points.tobytes(), pygltflib.ARRAY_BUFFER)
 
         self.gltf.accessors.append(
@@ -317,14 +332,19 @@ class GltfLibCanvas(Canvas):
         )
         points_access = len(self.gltf.accessors) - 1
 
-        for indices in _split(np.arange(len(vertices), dtype=self.index_t), np.nan, vertices[:,0]):
+        if indices is None:
+            indices_ = utility.split(np.arange(len(vertices), dtype=self.index_t), np.nan, vertices[:,0])
+        else:
+            indices_ = list(map(lambda x: np.array(x, dtype=self.index_t), indices))
+
+        for indices in indices_:
             # here, n adjusts indices by the number of nan rows that were removed so far
             n  = sum(np.isnan(vertices[:indices[0],0]))
             indices_array = indices - n
             indices_binary_blob = indices_array.tobytes()
 
             if len(indices_array) <= 1:
-                print(indices_array)
+                print(indices_array, file=sys.stderr)
                 continue
 
             self.gltf.accessors.extend([
@@ -342,7 +362,7 @@ class GltfLibCanvas(Canvas):
                    pygltflib.Mesh(
                      primitives=[
                          pygltflib.Primitive(
-                             mode=pygltflib.LINES,
+                             mode=pygltflib.LINE_STRIP,
                              attributes=pygltflib.Attributes(POSITION=points_access),
                              material=material,
                              # most recently added accessor
@@ -363,7 +383,7 @@ class GltfLibCanvas(Canvas):
 
 
     def plot_mesh(self, vertices, triangles, local_coords=None, style=None, **kwds):
-        
+
         material = self._get_material(style or MeshStyle())
         points    = np.array(vertices, dtype=self.float_t)
         triangles = np.array(triangles,dtype=self.index_t)

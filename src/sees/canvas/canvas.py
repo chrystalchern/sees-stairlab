@@ -1,29 +1,8 @@
 # Claudio Perez
 import numpy as np
-from dataclasses import dataclass
 import warnings
 
-@dataclass 
-class DrawStyle:
-    color: str
-
-@dataclass
-class LineStyle:
-    color: str   = "black"
-    alpha: float = 1.0
-    width: float = 1
-
-@dataclass
-class NodeStyle:
-    color: str   = "black"
-    scale: float = 1.0
-
-@dataclass
-class MeshStyle:
-    color: str   = "gray"
-    alpha: float = 1.0
-    edges: LineStyle = None
-
+from sees.config import MeshStyle, LineStyle, NodeStyle
 
 
 class Canvas:
@@ -34,8 +13,14 @@ class Canvas:
 
     def annotate(self, *args, **kwds): ...
 
-    def plot_nodes(self, vertices, indices=None, label=None, style: NodeStyle=None, data=None):
-        warnings.warn("plot_lines not implemented for chosen canvas")
+    def plot_label(self, vertices, text):
+        pass
+
+    def plot_hover(self, vertices, data=None, text=None, style: NodeStyle=None, label=None, keys=None, html=None):
+        warnings.warn("plot_hover not implemented for chosen canvas")
+
+    def plot_nodes(self, vertices, indices=None, label=None, style: NodeStyle=None, rotate=None, data=None):
+        warnings.warn("plot_nodes not implemented for chosen canvas")
 
     def plot_lines(self, vertices, indices=None, label=None, style: LineStyle=None):
         warnings.warn("plot_lines not implemented for chosen canvas")
@@ -50,6 +35,6 @@ class Canvas:
             for i in range(j,ne,3):
                 X[i*3,:] = locs[i]
                 X[i*3+1,:] = locs[i] + vecs[i]
-            self.plot_lines(X, color=("red", "blue", "green")[j], label=label)
+            self.plot_lines(X, style=LineStyle(color=("red", "blue", "green")[j]), label=label)
 
 

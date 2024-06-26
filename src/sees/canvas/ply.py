@@ -10,29 +10,36 @@ class PlotlyCanvas(Canvas):
         self.config = config
         self.annotations = []
 
-    def plot_nodes(self, coords, label = None, style=None, data=None):
+    def plot_nodes(self, vertices, label = None, style=None, data=None, rotations=None):
         name = label or "nodes"
-        x,y,z = coords.T
-        keys  = ["tag","crd"]
+        x,y,z = vertices.T
 
         trace = {
                 "name": name,
                 "x": x, "y": y, "z": z,
                 "type": "scatter3d","mode": "markers",
-                "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
-                "customdata": data,
+#               "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
+#               "customdata": data,
                 "marker": {
                     "symbol": "square",
-                    **self.config["objects"]["nodes"]["default"]
+                    "size": 3*style.scale,
+                    "color": style.color
+                    #**self.config["objects"]["nodes"]["default"]
                 },
                 "showlegend": False
         }
         self.data.append(trace)
 
-    def plot_lines(self, vertices, label=None, style=None):
+    def plot_lines(self, vertices, indices=None, label=None, style=None):
+        if indices is not None:
+            for idx in indices:
+                self.plot_lines(vertices[idx], label=label, style=style)
+            return
+
         if style is None:
             style = LineStyle(color="#808080")
-    
+
+
         x,y,z = vertices.T
         data = {
             "name": label if label is not None else "",
@@ -46,6 +53,26 @@ class PlotlyCanvas(Canvas):
             "hoverinfo":"skip"
         }
         self.data.append(data)
+
+
+    def plot_hover(self, vertices, data=None, keys=None, text=None, html=None, style=None, label=None):
+            if isinstance(data, dict):
+                keys  = list(map(str, data.keys()))
+                data  = [list(map(str, data.values())) for _ in range(len(vertices))]
+
+            elif isinstance(data, list):
+                assert keys is not None
+
+            x, y, z = vertices.T
+
+            self.data.append({
+                "name": label,
+                "x": x, "y": y, "z": z,
+                "type": "scatter3d", "mode": "markers", # "lines", #
+                "hovertemplate": "<br>".join(f"{k}: %{{customdata[{v}]}}" for v,k in enumerate(keys)),
+                "customdata": data,
+                "opacity": 0
+            })
 
     def annotate(self, text, coords, **kwds):
         self.annotations.append({
@@ -94,7 +121,7 @@ class PlotlyCanvas(Canvas):
         self.data.append({
             #"name": label if label is not None else "",
             "type": "mesh3d",
-            "x": x, "y": y, "z": z, 
+            "x": x, "y": y, "z": z,
             "i": i, "j": j, "k": k,
             "hoverinfo":"skip",
 #           "lighting": dict(ambient=0.9, roughness=0.5, specular=2),
@@ -105,8 +132,9 @@ class PlotlyCanvas(Canvas):
 
     def build(self):
         opts = self.config
+        show_objects = set()
 #       show_axis = "axis" in opts["show_objects"]
-        show_grid = "grid" in opts["show_objects"]
+        show_grid = False #"grid" in opts["show_objects"]
         import plotly.graph_objects as go
         fig = go.Figure(dict(
                 data=self.data,
@@ -114,35 +142,35 @@ class PlotlyCanvas(Canvas):
                 layout=go.Layout(
 #                 paper_bgcolor='white',
                   scene=dict(aspectmode="data",
-                         xaxis = {"showspikes": "tick" in opts["show_objects"], "nticks": 0,
+                         xaxis = {"showspikes": "tick" in show_objects, "nticks": 0,
                               "showbackground": show_grid, "backgroundcolor": "white",
-                              "showticklabels": "tick" in opts["show_objects"],
+                              "showticklabels": "tick" in show_objects,
                               "gridcolor": "gray" if show_grid else None
                          },
-                         yaxis = {"showspikes": "tick" in opts["show_objects"], "nticks": 0,
+                         yaxis = {"showspikes": "tick" in show_objects, "nticks": 0,
                               "showbackground": show_grid, "backgroundcolor": "white",
-                              "showticklabels": "tick" in opts["show_objects"],
+                              "showticklabels": "tick" in show_objects,
                               "gridcolor": "gray" if show_grid else None
                          },
-                         zaxis = {"showspikes": "tick" in opts["show_objects"], "nticks": 0,
+                         zaxis = {"showspikes": "tick" in show_objects, "nticks": 0,
                               "showbackground": show_grid, "backgroundcolor": "white",
-                              "showticklabels": "tick" in opts["show_objects"],
+                              "showticklabels": "tick" in show_objects,
                               "gridcolor": "gray" if show_grid else None
                          },
                      # LaTeX is not currently rendered in 3D, see:
                      # https://github.com/plotly/plotly.js/issues/608
 #                    xaxis_title = r"$\mathbf{E}_1$",
                      xaxis_title = "", yaxis_title="", zaxis_title="",
-                     xaxis_visible =  "x" in opts["show_objects"],#show_axis,
-                     yaxis_visible =  "y" in opts["show_objects"],#show_axis,
-                     zaxis_visible =  "z" in opts["show_objects"],#show_axis,
+                     xaxis_visible =  "x" in show_objects,#show_axis,
+                     yaxis_visible =  "y" in show_objects,#show_axis,
+                     zaxis_visible =  "z" in show_objects,#show_axis,
                      camera=dict(
                          projection={"type": opts["camera"]["projection"]}
                      ),
                      annotations=self.annotations,
                   ),
                   margin=dict(l=0,r=0,b=0,t=25),
-#                 showlegend=("legend" in opts["show_objects"])
+#                 showlegend=("legend" in show_objects)
                 )
             ))
         fig.update(layout_coloraxis_showscale=False)
@@ -159,11 +187,16 @@ class PlotlyCanvas(Canvas):
         import plotly
         #import plotly.offline
         #plotly.offline.plot(data, include_plotlyjs=False, output_type='div')
+        options = {
+          "include_plotlyjs": True,
+          "include_mathjax" : "cdn",
+          "full_html"       : True
+        }
         return plotly.io.to_html(self.fig,
                                  div_id=str(id(self)),
-                                 **self.config["save_options"]["html"])
+                                 **options)
 
-    def write(self, filename, format=None):
+    def write(self, filename, format=None, **options):
         if "html" in filename:
             with open(filename,"w+") as f:
                 f.write(self.to_html())
