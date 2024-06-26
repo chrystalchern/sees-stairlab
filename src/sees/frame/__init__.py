@@ -317,7 +317,6 @@ class FrameArtist:
         #
         # TODO: Remove everthing below
         #
-        sections = get_section_geometries(self.model, self.config)
 
         # N = 2
         N = 20 if displ is not None else 2
