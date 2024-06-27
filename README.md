@@ -120,14 +120,21 @@ python -m sees --help
 
 <br>
 
+## Related Links
+
 See also
 
-- [`opensees`](https://pypi.org/project/opensees)
+- [`opensees`](https://github.com/claudioperez/opensees)
 - [`osmg`](https://pypi.org/project/osmg)
 - [`mdof`](https://pypi.org/project/mdof)
 - [`sdof`](https://pypi.org/project/sdof)
 
-For OpenSees rendering
+
+The `sees` packages was used to generate figures for the following publications:
+
+- *On nonlinear geometric transformations of finite elements* [doi: 10.1002/nme.7506](https://doi.org/10.1002/nme.7506)
+
+Similar packages for OpenSees rendering include:
 
 - [`vfo`](https://vfo.readthedocs.io/en/latest/)
 - [`opsvis`](https://opsvis.readthedocs.io/en/latest/index.html)
@@ -156,9 +163,9 @@ Other
   </td>
 
   <td>
-    <a href="https://peer.berkeley.edu">
-    <img src="https://raw.githubusercontent.com/claudioperez/sdof/master/docs/assets/brace2_logo-new3_ungrouped.svg"
-         alt="BRACE2 Logo" width="200"/>
+    <a href="https://brace2.herokuapp.com">
+    <img src="https://raw.githubusercontent.com/claudioperez/sdof/master/docs/assets/stairlab.svg"
+         alt="STAIRlab Logo" width="200"/>
     </a>
   </td>
  
