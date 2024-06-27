@@ -23,6 +23,10 @@ def _is_plane(el):
     name = el["type"].lower()
     return "quad" in name or "shell" in name or "tri" in name
 
+def _is_solid(el):
+    name = el["type"].lower()
+    return "brick" in name
+
 def elastic_curve(x: Array, v: list, L:float)->Array:
     "compute points along Euler's elastica"
     if len(v) == 2:
@@ -144,6 +148,15 @@ class FrameArtist:
                                          (0, 1),
                                          (0, 0)))
 
+        elif ndf == 3 and model.ndm == 3:
+            self.dofs2plot = block_diag(*[R]*2)@np.array(((1,0, 0),
+                                                          (0,1, 0),
+                                                          (0,0, 1),
+
+                                                          (0,0, 0),
+                                                          (0,0, 0),
+                                                          (0,0, 0)))
+
         elif ndf == 3 and model.ndm == 2:
             self.dofs2plot = block_diag(*[R]*2)@np.array(((1,0, 0),
                                                           (0,1, 0),
@@ -257,6 +270,7 @@ class FrameArtist:
 #       frames = []
 
         planes = []
+        solids = []
 
         for i,(tag,el) in enumerate(model["assembly"].items()):
             if _is_frame(el):
@@ -281,6 +295,11 @@ class FrameArtist:
                 idx = model.cell_exterior(tag)
                 planes.append([*idx, idx[0]])
 
+#           elif _is_solid(el) and config["solid"]["show"]:
+#               # TODO: get cell faces
+#               idx = model.cell_exterior(tag)
+#               solids.append(idx)
+
         if do_frames and config["frame"]["show"]:
             self.canvas.plot_lines(frames[:,:self.ndm], style=config["frame"]["style"])
 
@@ -288,6 +307,11 @@ class FrameArtist:
             nodes = model.node_position(state=state)
             self.canvas.plot_lines(nodes, indices=np.array(planes),
                                    style=config["plane"]["style"])
+
+        if len(solids) > 0 and config["solid"]["show"]:
+            nodes = model.node_position(state=state)
+            self.canvas.plot_lines(nodes, indices=np.array(solids),
+                                          style=config["solid"]["style"])
 
     def draw_surfaces(self, state=None, layer=None, config=None):
         model = self.model

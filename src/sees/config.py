@@ -53,6 +53,7 @@ def SketchConfig(kwds=None):
       },
       "solid": {
           "edges":       {"show": True,  "style": LineStyle()},
+          "outline":     {"show": True,  "style": LineStyle(), "basis": None},
           "surface":     {"show": True,  "style": MeshStyle(), "scale": 1.0},
           "axes":        {"show": True,  "style": LineStyle(), "scale": 1.0}
       },

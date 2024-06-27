@@ -263,6 +263,14 @@ class FrameModel:
               "shell" in type and ("q" in type) or ("mitc" in type)):
             return self.cell_indices(tag)
 
+        elif "brick" in type:
+            indices = self.cell_indices(tag)
+            if len(indices) == 8:
+                return indices
+            else:
+                # TODO: Currently not handling higher-order bricks
+                return []
+
         return []
 
     def cell_interpolation(self, tag):
@@ -281,6 +289,20 @@ class FrameModel:
             if len(nodes) == 4:
                 return [[nodes[0], nodes[1], nodes[2]],
                         [nodes[2], nodes[3], nodes[0]]]
+
+        elif "brick" in type:
+            nodes = self.cell_exterior(tag)
+
+            if len(nodes) == 8:
+                triangles = []
+                for face in ((0, 3, 2, 1), (0, 1, 5, 4), (0, 4, 7, 3),
+                             (6, 7, 4, 5), (6, 2, 3, 7), (6, 5, 1, 2)):
+                    triangles.extend([
+                            [nodes[face[0]], nodes[face[1]], nodes[face[2]]],
+                            [nodes[face[2]], nodes[face[3]], nodes[face[0]]]
+                    ])
+                return triangles
+
         return []
 
     def add_hook():

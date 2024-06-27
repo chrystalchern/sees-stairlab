@@ -9,7 +9,7 @@ from sees import config
 from sees.errors import RenderError
 
 
-__version__ = "0.0.11"
+__version__ = "0.0.13"
 
 NAME = "sees"
 
