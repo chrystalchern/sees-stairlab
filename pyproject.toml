@@ -1,11 +1,11 @@
 [project]
 name = "sees"
-version = "0.0.6"
+version = "0.0.13"
 authors = [
   {name="Claudio M. Perez", email="50180406+claudioperez@users.noreply.github.com"},
   {name="Chrystal Chern",   email="52893467+chrystalchern@users.noreply.github.com"}
 ]
-description="A modern OpenSees renderer"
+description="Finite element post-processing with WebGL"
 
 readme = "README.md"
 
@@ -14,13 +14,14 @@ keywords = [
   "post-processing",
   "finite-element-analysis",
   "earthquake-engineering",
+  "WebGL",
+  "GLTF"
 ] 
 
 dependencies = [
-  "sdof",
-  "ssid",
   "opensees",
   "quakeio",
+  "bottle",
 
   "pyyaml",
   "scipy",
@@ -29,6 +30,9 @@ dependencies = [
 # "trimesh",
   "pygltflib",
   "matplotlib"
+
+# "sdof",
+# "mdof",
 ]
 
 classifiers = [
@@ -46,7 +50,6 @@ classifiers = [
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3 :: Only',
-    'Programming Language :: Python :: Implementation :: CPython',
     'Topic :: Software Development',
     'Topic :: Scientific/Engineering',
     'Operating System :: Microsoft :: Windows',
@@ -57,8 +60,8 @@ classifiers = [
 
 
 [project.urls]
-repository = "http://github.com/BRACE2/sees"
-# documentation = "https://brace2.github.io/sees"
+repository = "http://github.com/claudioperez/opensees"
+documentation = "https://stairlab.github.io/opensees-gallery"
 
 [project.scripts]
 sees = "sees.__main__:main"
@@ -69,4 +72,8 @@ requires = [
 ]
 
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+sees = ["assets/*"]
+
 
