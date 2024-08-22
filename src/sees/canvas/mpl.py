@@ -1,5 +1,6 @@
 # Claudio Perez
 import numpy as np
+import warnings
 from .canvas import Canvas, NodeStyle, MeshStyle, LineStyle
 
 VIEWS = { # pre-defined plot views
@@ -45,7 +46,10 @@ class MatplotlibCanvas(Canvas):
     def write(self, filename):
         self.ax.figure.savefig(filename)
 
-    def plot_lines(self, vertices, label=None, style=None):
+    def plot_lines(self, vertices, label=None, style=None, indices=None):
+        if indices is not None:
+            warnings.warn("matplotlib canvas does not support indices in plot_lines")
+            return
         if style is None:
             style = LineStyle(width=0.5, color="gray", alpha=0.6)
 
