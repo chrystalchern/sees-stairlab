@@ -1,3 +1,9 @@
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
 # Claudio Perez
 # Summer 2024
 import sys
@@ -28,7 +34,7 @@ class Server:
 
     def run(self, port=None):
         if port is None:
-            port = 8080
+            port = 8082
 
         try:
             bottle.run(self._app, host="localhost", port=port)
