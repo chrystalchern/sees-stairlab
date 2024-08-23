@@ -108,7 +108,8 @@ def sketch_show(artist_config, argn: str, arg="show", exclusive: bool=False, pre
                 for k, v in artist_config["sketches"][sketch][obj].items():
                     if preserve is not None and (sketch, obj, k) in preserve:
                         continue
-                    v["show"] = False
+                    if v is not None:
+                        v["show"] = False
 
             if arg == "style":
                 feature, val = feature.split("=")
@@ -123,7 +124,7 @@ def sketch_show(artist_config, argn: str, arg="show", exclusive: bool=False, pre
                     # we settle for a string
                     pass
 
-                if hasattr(artist_config["sketches"][sketch][obj][feature]["style"], prop):
+                if  hasattr(artist_config["sketches"][sketch][obj][feature]["style"], prop):
                     setattr(artist_config["sketches"][sketch][obj][feature]["style"], prop, val)
                 else:
                     artist_config["sketches"][sketch][obj][feature][prop] = val
@@ -283,7 +284,7 @@ def parse_args(argv)->dict:
                             else:
                                 artist_config["sketches"][sketch][obj][stroke][prop] = val
                             artist_config["sketches"][sketch][obj][stroke]["show"] = True
-                            print(f"{sketch = }", f"{obj = }", f"{stroke = }", artist_config["sketches"][sketch][obj][stroke], sep="\n", end="\n---\n")
+#                           print(f"{sketch = }", f"{obj = }", f"{stroke = }", artist_config["sketches"][sketch][obj][stroke], sep="\n", end="\n---\n")
                         else:
                             artist_config["sketches"][sketch][obj][stroke]["show"] = (arg == "--show")
 
