@@ -11,8 +11,8 @@
 
 <div style="align:center">
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13367077.svg)](https://doi.org/10.5281/zenodo.13367077)
 [![Latest PyPI version](https://img.shields.io/pypi/v/sees?logo=pypi&style=for-the-badge)](https://pypi.python.org/pypi/sees)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/sees?style=for-the-badge)](https://pypi.org/project/sees)
 
 <!--
 [![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/sees?logo=conda-forge&style=for-the-badge)](https://anaconda.org/conda-forge/sees)
