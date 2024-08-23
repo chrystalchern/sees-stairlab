@@ -1,4 +1,11 @@
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
 # Claudio Perez
+#
 from .canvas import Canvas, NodeStyle, MeshStyle, LineStyle
 import numpy as np
 

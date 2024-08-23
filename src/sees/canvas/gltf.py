@@ -1,4 +1,11 @@
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
 # Claudio Perez
+#
 """
 - glTF uses a right-handed coordinate system, that is, the cross product of +X and +Y yields +Z.
 - glTF defines +Y as up.
