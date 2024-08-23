@@ -1,22 +1,13 @@
 # `sees`
 
-<!--
-<img align="left" src="https://raw.githubusercontent.com/BRACE2/OpenSeesRT/master/docs/figures/banner.png" width="150px" alt="OpenSees">
--->
 
-<img align="left" src="https://github.com/claudioperez/opensees/blob/master/docs/figures/hockling.png?raw=true" width="350px" alt="SEES Logo">
+<img align="left" src="https://stairlab.github.io/opensees-gallery/examples/shellframe/ShellFrame.png" width="350px" alt="SEES Logo">
 
-<!--
-https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=true
--->
 
-**A modern OpenSees renderer**
+**Finite element visualization framework**
 
 <br>
 
-<!-- 
--------------------------------------------------------------------- 
--->
 
 <div style="align:center">
 
@@ -29,10 +20,6 @@ https://github.com/claudioperez/sees/blob/master/docs/figures/hockling.png?raw=t
 -->
 
 </div>
-
-<!-- 
--------------------------------------------------------------------- 
--->
 
 `sees` is a finite element rendering library that leverages modern 
 web technologies to produce sharable, efficient, and beautiful renderings.
@@ -55,7 +42,7 @@ Documentation is currently under development.
 
 ## Features
 
-- Extruded deformed shape
+- Render frames with extruded cross sections
 
 - Detailed section rendering
 
@@ -75,7 +62,7 @@ To create a rendering, execute the following command from the anaconda prompt (a
 python -m sees model.json -o model.html
 ```
 
-where `model.json` is a JSON file generate from executing the following OpenSees command:
+where `model.json` is a JSON file generated from executing the following OpenSees command:
 
 ```tcl
 print -JSON model.json
@@ -91,7 +78,7 @@ opposed to the interactive html.
 > [`opensees`](https://pypi.org/project/opensees) package.
 
 By default, the rendering treats the $y$ coordinate as vertical.
-In order to manually control this behavior, just pass the  option 
+In order to manually control this behavior, pass the option 
 `--vert 3` to render model $z$ vertically, or `--vert 2` to render model $y$ vertically.
 
 If the [`opensees`](https://pypi.org/project/opensees) package is installed,
@@ -117,7 +104,6 @@ python -m sees --help
 ```
 
 
-
 <br>
 
 ## Related Links
@@ -134,6 +120,7 @@ The `sees` packages was used to generate figures for the following publications:
 
 - *On nonlinear geometric transformations of finite elements* [doi: 10.1002/nme.7506](https://doi.org/10.1002/nme.7506)
 
+<!-- 
 Similar packages for OpenSees rendering include:
 
 - [`vfo`](https://vfo.readthedocs.io/en/latest/)
@@ -141,7 +128,8 @@ Similar packages for OpenSees rendering include:
 
 Other
 
-- [`fapp`](https://github.com/wcfrobert/fapp)
+- [`fapp`](https://github.com/wcfrobert/fapp) 
+-->
 
 ## Support
 
