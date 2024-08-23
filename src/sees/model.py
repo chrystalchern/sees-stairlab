@@ -29,6 +29,11 @@ _OUTLINES = {
 }
 
 
+def _is_frame(el):
+    name = el["type"].lower()
+    return     "beam"  in name \
+            or "dfrm"  in name \
+            or "frame" in name
 
 def read_model(filename:str, shift=None)->dict:
     if isinstance(filename, str) and filename.endswith(".tcl"):
@@ -90,6 +95,7 @@ class FrameModel:
         self._frame_outlines = None
         self._extrude_default = _OUTLINES[kwds.get("extrude_default", "square")]
         self._extrude_outline = _OUTLINES[kwds.get("extrude_outline", None)]
+        self._extrude_scale   = kwds.get("extrude_scale",   1.0)
 
         ndm = 3
         R = np.eye(ndm) if rot is None else rot
@@ -254,6 +260,9 @@ class FrameModel:
 
 
     def cell_exterior(self, tag):
+        """
+        return an array of node indices
+        """
         type = self["assembly"][tag]["type"].lower()
 
         if "frm" in type or "beamcol" in type:
@@ -262,6 +271,13 @@ class FrameModel:
         elif ("quad" in type or \
               "shell" in type and ("q" in type) or ("mitc" in type)):
             return self.cell_indices(tag)
+
+        elif ("tri" in type or \
+              "shell" in type and ("t" in type)):
+            return self.cell_indices(tag)
+
+        elif "tetra" in type:
+            indices = self.cell_indices(tag)
 
         elif "brick" in type:
             indices = self.cell_indices(tag)
@@ -282,9 +298,15 @@ class FrameModel:
         if "frm" in type or "beamcol" in type:
             return []
 
-        elif ("quad" in type or \
-              "shell" in type and ("q" in type) or ("mitc" in type)):
+        elif "tri" in type:
+            return self.cell_indices(tag)
+
+        elif ("quad" in type or
+             ("shell" in type and ("q" in type) or ("mitc" in type))):
             nodes = self.cell_indices(tag)
+
+            if len(nodes) == 3:
+                return nodes
 
             if len(nodes) == 4:
                 return [[nodes[0], nodes[1], nodes[2]],
@@ -308,19 +330,22 @@ class FrameModel:
     def add_hook():
         pass
 
-    def cell_surface(self, tag):
+    def cell_section(self, tag):
+        if not _is_frame(self["assembly"][tag]):
+            return None
+
         if self._frame_outlines is None:
             self._frame_outlines = _get_frame_outlines(self)
 
         if self._extrude_outline is not None:
-            return self._extrude_outline
+            return self._extrude_outline*self._extrude_scale
         elif tag in self._frame_outlines:
             return self._frame_outlines[tag]
         else:
             return self._extrude_default
 
 
-def _from_opensees(sam, shift, R):
+def _from_opensees(sam: dict, shift, R):
     # Process OpenSees JSON format
     try:
         sam = sam["StructuralAnalysisModel"]
