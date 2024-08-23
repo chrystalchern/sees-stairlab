@@ -1,37 +1,13 @@
-"""
-# Synopsis
-
->`render.py [<options>] <model-file>`
-
->**Chrystal Chern**, and **Claudio Perez**
-
-
-This script plots the geometry of a structural
-model given a SAM JSON file.
-
-
-## Matlab
-In order to install the Matlab bindings, open Matlab in a
-directory containing the files `render.py` and `render.m`,
-and run the following command in the Matlab interpreter:
-
-    render --install
-
-Once this process is complete, the command `render` can be
-called from Matlab, just as described below for the command
-line.
-
-# Usage
-This script can be used either as a module, or as a command
-line utility. When invoked from the command line on
-**Windows**, {NAME} should be `python -m render`. For example:
-
-    python -m render model.json --axes 2 --view elev
-
-"""
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
+# Main command line interface
+#
 import sys
 
-#import sees
 from sees import render
 from sees.parser import parse_args
 from sees.errors import RenderError
