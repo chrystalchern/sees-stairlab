@@ -37,7 +37,7 @@ def draw_extrusions(model, canvas, state=None, config=None):
     I = 0
     for i,el in enumerate(model["assembly"].values()):
 
-        outline = model.cell_surface(el["name"])
+        outline = model.cell_section(el["name"])
         if outline is None:
             continue
 
@@ -88,11 +88,12 @@ def draw_extrusions(model, canvas, state=None, config=None):
 
     triang = [list(reversed(i)) for i in triang]
 
-    canvas.plot_mesh(coords, triang, local_coords=locoor, style=config["style"])
+    if len(triang) > 0:
+        canvas.plot_mesh(coords, triang, local_coords=locoor, style=config["style"])
 
     show_edges = True
 
-    if not show_edges:
+    if not show_edges or len(triang) == 0:
         return
 
     IDX = np.array((
