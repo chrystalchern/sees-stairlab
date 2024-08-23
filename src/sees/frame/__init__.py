@@ -1,4 +1,11 @@
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
 # Claudio Perez
+#
 import sys
 import warnings
 from collections import defaultdict
@@ -119,7 +126,6 @@ class FrameArtist:
         self.config = config
         self.canvas = canvas
         vert = config.get("vertical", 2)
-
 
         self.ndm = 3
 
