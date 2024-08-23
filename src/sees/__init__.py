@@ -94,7 +94,7 @@ def render(sam_file, res_file=None, noshow=False, ndf=6,
         pass
 
     elif not isinstance(sam_file, dict):
-        model_data = sees.model.read_model(sam_file)
+        model_data = sees.model.FrameModel(sam_file)
 
     else:
         model_data = sam_file
@@ -116,6 +116,11 @@ def render(sam_file, res_file=None, noshow=False, ndf=6,
         preserve = set()
         for arg in displaced:
             sketch_show(config["artist_config"], f"displaced:{arg}", "show", exclusive=True, preserve=preserve)
+
+    if hide is not None:
+        preserve = set()
+        for arg in hide:
+            sketch_show(config["artist_config"], f"displaced:{arg}", "hide", exclusive=True, preserve=preserve)
 
     if verbose:
         import pprint
