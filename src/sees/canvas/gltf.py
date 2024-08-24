@@ -7,9 +7,11 @@
 # Claudio Perez
 #
 """
-- glTF uses a right-handed coordinate system, that is, the cross product of +X and +Y yields +Z.
 - glTF defines +Y as up.
+- glTF uses a right-handed coordinate system, that is, the cross product of +X and +Y yields +Z.
 - The front of a glTF asset faces +Z.
+
+
 - All angles are in radians.
 - Positive rotation is counterclockwise.
 - Rotations are given as quaternions stored as a tuple (x,y,z,w),
@@ -20,16 +22,15 @@
 
 """
 import sys
-import sees
 import warnings
 import itertools
-from pathlib import Path
 
 import numpy as np
 import pygltflib
 from scipy.spatial.transform import Rotation
-from .canvas import Canvas
 
+import sees
+from .canvas import Canvas
 from sees import utility
 from sees.config import NodeStyle, MeshStyle, LineStyle, DrawStyle
 
@@ -110,21 +111,21 @@ class GltfLibCanvas(Canvas):
                     pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
                         baseColorFactor=[0.9, 0.9, 0.9, 1]
                     )
-                ),
-                pygltflib.Material(
-                    name="metal",
-                    doubleSided=True,
-#                   alphaMode=pygltflib.MASK,
-                    occlusionTexture=pygltflib.OcclusionTextureInfo(index=1),
-#                   emissiveFactor=[0.8,0.8,0.8],
-                    pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
-                        metallicFactor=0.0,
-                        roughnessFactor=1.0,
-#                       baseColorFactor=[0.8, 0.8, 0.8, 1],
-                        baseColorTexture=pygltflib.TextureInfo(index=0),
-                        metallicRoughnessTexture=pygltflib.TextureInfo(index=1),
-                    )
-                ),
+                )
+                #                 pygltflib.Material(
+                #                     name="metal",
+                #                     doubleSided=True,
+                # #                   alphaMode=pygltflib.MASK,
+                #                     occlusionTexture=pygltflib.OcclusionTextureInfo(index=1),
+                # #                   emissiveFactor=[0.8,0.8,0.8],
+                #                     pbrMetallicRoughness=pygltflib.PbrMetallicRoughness(
+                #                         metallicFactor=0.0,
+                #                         roughnessFactor=1.0,
+                # #                       baseColorFactor=[0.8, 0.8, 0.8, 1],
+                #                         baseColorTexture=pygltflib.TextureInfo(index=0),
+                #                         metallicRoughnessTexture=pygltflib.TextureInfo(index=1),
+                #                     )
+                #                 ),
             ],
             bufferViews=[],
             buffers=[pygltflib.Buffer(byteLength=0)],
@@ -139,8 +140,7 @@ class GltfLibCanvas(Canvas):
         #
         # load assets for steel material
         #
-        try:
-#           for i,file in enumerate(("baseColor.png", "occlusionRoughnessMetallic.png")):
+        if False:
             for i,file in enumerate(("rust.jpg", "occlusionRoughnessMetallic.png")):
                 path  = str(sees.assets/"metal"/file)
                 image = pygltflib.Image()
@@ -149,8 +149,7 @@ class GltfLibCanvas(Canvas):
                 self.gltf.textures.append(pygltflib.Texture(source=i, name=path))
 
             self.gltf.convert_images(pygltflib.ImageFormat.DATAURI)
-        except:
-            warnings.warn(f"Failed to load assets from {sees.assets}.")
+
 
     def _init_nodes(self, style: NodeStyle):
         #
@@ -325,6 +324,7 @@ class GltfLibCanvas(Canvas):
 
         if points.size == 0:
             return
+
         points_buffer = self._push_data(points.tobytes(), pygltflib.ARRAY_BUFFER)
 
         self.gltf.accessors.append(
@@ -340,12 +340,13 @@ class GltfLibCanvas(Canvas):
         points_access = len(self.gltf.accessors) - 1
 
         if indices is None:
+            # Get indices by splitting at nans
             indices_ = utility.split(np.arange(len(vertices), dtype=self.index_t), np.nan, vertices[:,0])
         else:
             indices_ = list(map(lambda x: np.array(x, dtype=self.index_t), indices))
 
         for indices in indices_:
-            # here, n adjusts indices by the number of nan rows that were removed so far
+            # Here, n adjusts indices by the number of nan rows that were removed so far
             n  = sum(np.isnan(vertices[:indices[0],0]))
             indices_array = indices - n
             indices_binary_blob = indices_array.tobytes()
@@ -391,13 +392,14 @@ class GltfLibCanvas(Canvas):
 
     def plot_mesh(self, vertices, triangles, local_coords=None, style=None, **kwds):
 
-        material = self._get_material(style or MeshStyle())
+        material  = self._get_material(style or MeshStyle())
         points    = np.array(vertices, dtype=self.float_t)
         triangles = np.array(triangles,dtype=self.index_t)
 
         triangles_binary_blob = triangles.flatten().tobytes()
         points_binary_blob = points.tobytes()
 
+        # Add accessors for (1) point coordinates and (2) indices
         self.gltf.accessors.extend([
             pygltflib.Accessor(
                 bufferView=self._push_data(triangles_binary_blob, pygltflib.ELEMENT_ARRAY_BUFFER),
@@ -432,6 +434,7 @@ class GltfLibCanvas(Canvas):
                  ]
                )
         )
+
         if local_coords is not None:
             locoor = np.array(local_coords, dtype=self.float_t)
             locoor_binary_blob = locoor.tobytes()
