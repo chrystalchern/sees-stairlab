@@ -1,3 +1,9 @@
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
 # Claudio Perez
 from .canvas import Canvas
 import trimesh

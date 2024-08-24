@@ -4,7 +4,7 @@
 <img align="left" src="https://stairlab.github.io/opensees-gallery/examples/shellframe/ShellFrame.png" width="350px" alt="SEES Logo">
 
 
-**Finite element visualization framework**
+**Highly efficient and portable finite element visualization framework**
 
 <br>
 

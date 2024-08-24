@@ -1,4 +1,11 @@
+#===----------------------------------------------------------------------===#
+#
+#         STAIRLab -- STructural Artificial Intelligence Laboratory
+#
+#===----------------------------------------------------------------------===#
+#
 # Claudio Perez
+#
 import warnings
 from collections import defaultdict
 
